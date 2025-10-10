@@ -614,7 +614,7 @@ void Zombie::CloseRangeMovement(int starterArea[][COLS], Pair src, Pair dest, in
         this->ZombieposY;
         this->ZombieposX;
 
-        bool hitingWall = false;
+        bool hittingWall = false;
         
         
         
@@ -624,22 +624,22 @@ void Zombie::CloseRangeMovement(int starterArea[][COLS], Pair src, Pair dest, in
         if (VisionCheck(ZombieposX, ZombieposY, PlayerX, PlayerY, starterArea, ZombieDeathValue, 9))
         {
             randomNumber = rand() % 4;
-
+            
             if (randomNumber == 0)
             {
-                for (int i = 0, hitingWall = false; i < ZombieSize; i++)
+                for (int i = 0; i < ZombieSize; i++)
                 {
-                    if (starterArea[ZombieposY - 1][ZombieposX] == 0 || starterArea[ZombieposY - 1][ZombieposX] == 9)
+                    if (starterArea[ZombieposY - 1][ZombieposX + i] == 0 || starterArea[ZombieposY - 1][ZombieposX + i] == 9)
                     {
                         
                     }
                     else
                     {
-                        hitingWall = true;
+                        hittingWall = true;
                         break;
                     }
                 }
-                if (hitingWall = false)
+                if (!hittingWall)
                 {
                     ZombieposY--;
                     gotoxy(ZombieposX, ZombieposY + 1);
@@ -649,19 +649,19 @@ void Zombie::CloseRangeMovement(int starterArea[][COLS], Pair src, Pair dest, in
             }
             else if (randomNumber == 1)
             {
-                for (int i = 0, hitingWall = false; i < ZombieSize; i++)
+                for (int i = 0; i < ZombieSize; i++)
                 {
-                    if (starterArea[ZombieposY][ZombieposX - 1] == 0 || starterArea[ZombieposY][ZombieposX - 1] == 9)
+                    if (starterArea[ZombieposY][ZombieposX - 1 + i] == 0 || starterArea[ZombieposY][ZombieposX - 1 + i] == 9)
                     {
-                        
+                       
                     }
                     else
                     {
-                        hitingWall = true;
+                        hittingWall = true;
                         break;
                     }
                 }
-                if (!hitingWall)
+                if (!hittingWall)
                 {
                     ZombieposX--;
                     gotoxy(ZombieposX + 7, ZombieposY);
@@ -670,19 +670,19 @@ void Zombie::CloseRangeMovement(int starterArea[][COLS], Pair src, Pair dest, in
             }
             else if (randomNumber == 2)
             {
-                for (int i = 0, hitingWall = false; i < ZombieSize; i++)
+                for (int i = 0; i < ZombieSize; i++)
                 {
-                    if (starterArea[ZombieposY + 1][ZombieposX] == 0 || starterArea[ZombieposY + 1][ZombieposX] == 9)
+                    if (starterArea[ZombieposY + 1][ZombieposX + i] == 0 || starterArea[ZombieposY + 1][ZombieposX + i] == 9)
                     {
                         
                     }
                     else
                     {
-                        hitingWall = true;
+                        hittingWall = true;
                         break;
                     }
                 }
-                if (!hitingWall)
+                if (!hittingWall)
                 {
                     ZombieposY++;
                     gotoxy(ZombieposX, ZombieposY - 1);
@@ -691,19 +691,19 @@ void Zombie::CloseRangeMovement(int starterArea[][COLS], Pair src, Pair dest, in
             }
             else
             {
-                for (int i = 0, hitingWall = false; i < ZombieSize; i++)
+                for (int i = 0; i < ZombieSize; i++)
                 {
-                    if (starterArea[ZombieposY][ZombieposX + 1] == 0 || starterArea[ZombieposY][ZombieposX + 1] == 9)
+                    if (starterArea[ZombieposY][ZombieposX + i + 1] == 0 || starterArea[ZombieposY][ZombieposX + i + 1] == 9)
                     {
                         
                     }
                     else
                     {
-                        hitingWall = true;
+                        hittingWall = true;
                         break;
                     }
                 }
-                if (!hitingWall)
+                if (!hittingWall)
                 {
                     ZombieposX++;
                     gotoxy(ZombieposX - 1, ZombieposY);
@@ -717,11 +717,10 @@ void Zombie::CloseRangeMovement(int starterArea[][COLS], Pair src, Pair dest, in
             waitForNextZombieMove++;
             return;
         }
-        
 
         Zombiespeed = 20;
         // If the source is out of range
-        if (isValid(src.first, src.second) == false) {
+        if (!isValid(src.first, src.second)) {
             printf("Source is invalid\n");
             return;
         }
