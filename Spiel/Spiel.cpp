@@ -20,8 +20,8 @@
 #define COLS 162
 #define PlayerSize 4
 #define HowManyZombiesExist 2
-int PlayerX = 62;
-int PlayerY = 17;
+int PlayerX = 22;//62
+int PlayerY = 11;//17
 
 
 using namespace std;
@@ -168,7 +168,7 @@ void tracePath(cell cellDetails[][COLS], int row, int col,int& ZombieposX,int& Z
     printf("       ");
     gotoxy(ZombieposX, ZombieposY);
     printf("\033[0;32m[-º_°]-\033[0m");
-
+       
     waitForNextZombieMove++;
 }
 class Zombie
@@ -206,60 +206,68 @@ public:
     }
     void CloseRangeMovement(int starterArea[][COLS],Pair src,Pair dest,int& waitForNextZombieMove, int& win, bool& ZombieXMove, int ZombieDeathValue);
 };
-    void PlayersMovement(int& input, int abbruch, int area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown);
-    void AreaOfMap(int area, int starterArea[][COLS]);
-    int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& sword, int lastNumberPressed);
-    void ECheck(int area, int starterArea[][COLS], int sword, int lastNumberPressed, int input);
-    void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]);
-    void WaitingTime(int& waitForNextMove, int& waitForSwordAnimation, int lastNumberPressed, int& swordCooldown, Zombie zombies[]);
-    void swordAnimations(int lastNumberPressed, int starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie);
-    void HitCheck(int SwordX, int SwordY, int area, Zombie& zombie, int howFar, int lastNumberPressed);
-    bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int starterArea[][COLS], int starterArrayValue, int targetArrayValue);
-    
-    
-    int main()
+
+
+
+void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown);
+void AreaOfMap(int area, int starterArea[][COLS]);
+int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& sword, int lastNumberPressed);
+void ECheck(int area, int starterArea[][COLS], int sword, int lastNumberPressed, int input);
+void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]);
+void WaitingTime(int& waitForNextMove, int& waitForSwordAnimation, int lastNumberPressed, int& swordCooldown, Zombie zombies[]);
+void swordAnimations(int lastNumberPressed, int starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie);
+void HitCheck(int SwordX, int SwordY, int area, Zombie& zombie, int howFar, int lastNumberPressed);
+bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int starterArea[][COLS], int starterArrayValue, int targetArrayValue);
+void ChangeArea(int& area, int starterArea[][COLS]);
+
+int main()
+{
+    int win = 0;
+    int input = 0;
+    int area = 1;
+    int abbruch = 0;
+    int sword = 1;
+    int swordAnimationPhase = 0;
+    int waitForSwordAnimation = 0;
+    int swordCooldown = 0;
+    int testchange = 0;
+    int lastNumberPressed = 5;
+    //0: labdoor 1: ?
+    int keys[1] = { 0 };
+    int waitForNextMove = 0;
+    cursoroff();
+    setlocale(LC_ALL, "");
+    HWND hwnd = GetConsoleWindow();
+    ShowWindow(hwnd, SW_MAXIMIZE);
+    SetConsoleOutputCP(CP_UTF8);
+
+    srand((unsigned)time(NULL));
+
+
+
+    gotoxy(PlayerX, PlayerY);
+    printf("[°-°]");
+    AreaOfMap(area, starterArea);
+    area = 2;
+    ChangeArea(area, starterArea);
+    // X, Y, life, armor, damage, speed, waitingtime, win, size, zombieDeathValue
+    Zombie zombies[HowManyZombiesExist] = 
     {
-        int win = 0;
-        int input = 0;
-        int area = 1;
-        int abbruch = 0;
-        int sword = 1;
-        int swordAnimationPhase = 0;
-        int waitForSwordAnimation = 0;
-        int swordCooldown = 0;
-        int testchange = 0;
-        int lastNumberPressed = 5;
-        //0: labdoor 1: ?
-        int keys[1] = { 0 };
-        int waitForNextMove = 0;
-        cursoroff();
-        setlocale(LC_ALL, "");
-        HWND hwnd = GetConsoleWindow();
-        ShowWindow(hwnd, SW_MAXIMIZE);
-        SetConsoleOutputCP(CP_UTF8);
+         Zombie(54,27, 3, 1, 2, 20, 0, 0, 7, 20),  // zombie1
+         Zombie(120,29, 3, 1, 2, 20, 0, 0, 7, 10)   // zombie2
+    };
+     
+    cursoroff();
 
-        srand((unsigned)time(NULL));
-
-
-
-        gotoxy(PlayerX, PlayerY);
-        printf("[°-°]");
-        AreaOfMap(area, starterArea);
-        // X, Y, life, armor, damage, speed, waitingtime, win, size, zombieDeathValue
-        Zombie zombies[HowManyZombiesExist] = 
+    while (win == 0)
+    {
+        for (int i = 0; i < HowManyZombiesExist; i++)
         {
-             Zombie(54,27, 3, 1, 2, 20, 0, 0, 7, 20),  // zombie1
-             Zombie(120,29, 3, 1, 2, 20, 0, 0, 7, 10)   // zombie2
-        };
-         
-        cursoroff();
-
-        while (win == 0)
-        {
-            for (int i = 0; i < 2; i++)
+            if (area == 1)
             {
                 if (zombies[i].waitForNextZombieMove == 0)
                 {
+
                     // Destination is the left-most top-most corner
                     Pair dest = make_pair(PlayerY, PlayerX);
 
@@ -273,78 +281,152 @@ public:
 
                 }
             }
-            if (_kbhit()) {
-                if (waitForNextMove == 0 && swordAnimationPhase == 0)
-                {
-                    input = _getch();
-                    PlayersMovement(input, abbruch, area, sword, starterArea, lastNumberPressed, swordAnimationPhase, keys, swordCooldown);
-                    ECheck(area, starterArea, sword, lastNumberPressed, input);
-                    waitForNextMove++;
-
-                }
-            }
-            if (swordAnimationPhase > 0 && waitForSwordAnimation == 0)
+        }
+        
+        if (_kbhit()) {
+            if (waitForNextMove == 0 && swordAnimationPhase == 0)
             {
-                //printf("%d", swordAnimationPhase);
-                if ((lastNumberPressed == 1 || lastNumberPressed == 3) && swordAnimationPhase < 6)
-                {
-                    for (int i = 0; i < HowManyZombiesExist; i++)
-                    {
-                        swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
-                        if (zombies[i].Zombielives <= 0)
-                        {
-                           
-                            for (int j = 0; j < zombies[i].ZombieSize; j++)
-                            {
-                                starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
-                            }
-                            gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
-                            printf("\033[0;32m[-X_X]-\033[0m");
-                        }
-                    }
-                    
-                    swordAnimationPhase++;
-                    waitForSwordAnimation++;
-                }
-                else if ((lastNumberPressed == 2 || lastNumberPressed == 4) && swordAnimationPhase < 5)
-                {
-                    for (int i = 0; i < 2; i++)
-                    {
-                        swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
-                        if (zombies[i].Zombielives <= 0)
-                        {
-                            
-                            for (int j = 0; j < zombies[i].ZombieSize; j++)
-                            {
-                                starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
-                            }
-                            gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
-                            printf("\033[0;32m[-X_X]-\033[0m");
-                        }
-                    }
-                    swordAnimationPhase++;
-                    waitForSwordAnimation++;
-                }
-                else
-                {
-                    swordAnimationPhase = 0;
-                    waitForSwordAnimation = 0;
-                    swordCooldown = 30;
-
-                }
-                
+                input = _getch();
+                PlayersMovement(input, abbruch, area, sword, starterArea, lastNumberPressed, swordAnimationPhase, keys, swordCooldown);
+                ECheck(area, starterArea, sword, lastNumberPressed, input);
+                waitForNextMove++;
             }
-            //AreaOfMap(area, playerX, playerY, starterArea);
-            Sleep(1);
-            WaitingTime(waitForNextMove, waitForSwordAnimation, lastNumberPressed, swordCooldown, zombies);
-
-
         }
 
-        //gotoxy(5, 46);
-        //printf("OHHHHH P.DIDDY NOOOOOOOOOOOO"),
-        Sleep(5000);
+        if (swordAnimationPhase > 0 && waitForSwordAnimation == 0)
+        {
+            //printf("%d", swordAnimationPhase);
+            if ((lastNumberPressed == 1 || lastNumberPressed == 3) && swordAnimationPhase < 6)
+            {
+                for (int i = 0; i < HowManyZombiesExist; i++)
+                {
+                    swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
+                    if (zombies[i].Zombielives <= 0)
+                    {
+                       
+                        for (int j = 0; j < zombies[i].ZombieSize; j++)
+                        {
+                            starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
+                        }
+                        gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
+                        printf("\033[0;32m[-X_X]-\033[0m");
+                    }
+                }
+                
+                swordAnimationPhase++;
+                waitForSwordAnimation++;
+            }
+            else if ((lastNumberPressed == 2 || lastNumberPressed == 4) && swordAnimationPhase < 5)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
+                    if (zombies[i].Zombielives <= 0)
+                    {
+                        
+                        for (int j = 0; j < zombies[i].ZombieSize; j++)
+                        {
+                            starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
+                        }
+                        gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
+                        printf("\033[0;32m[-X_X]-\033[0m");
+                    }
+                }
+                swordAnimationPhase++;
+                waitForSwordAnimation++;
+            }
+            else
+            {
+                swordAnimationPhase = 0;
+                waitForSwordAnimation = 0;
+                swordCooldown = 30;
+
+            }
+            
+        }
+
+        //AreaOfMap(area, playerX, playerY, starterArea);
+        Sleep(1);
+        WaitingTime(waitForNextMove, waitForSwordAnimation, lastNumberPressed, swordCooldown, zombies);
+        
+
     }
+
+    //gotoxy(5, 46);
+    //printf("OHHHHH P.DIDDY NOOOOOOOOOOOO"),
+    Sleep(5000);
+}
+void ChangeArea(int& area, int starterArea[][COLS])
+{
+    int NumberForDoor = 1;
+    system("cls");
+   
+    gotoxy(PlayerX, PlayerY);
+    printf("[°-°]");
+
+    // set everything to 0
+    memset(starterArea, 0, ROWS * COLS * sizeof(int));
+
+    if (area == 2)
+    {
+        // second row changed to 1
+        memset(&starterArea[2], 1, COLS * sizeof(int));
+        for (int i = 0; i < COLS; i++)
+        {
+            gotoxy(i, 2);
+            printf("_");
+        }
+
+        // 11the row changed to 1
+        memset(&starterArea[12][0], 1, (COLS - 40) * sizeof(int));
+        for (int i = 1; i < COLS - 41; i++)
+        {
+            gotoxy(i, 12);
+            printf("_");
+        }
+        // Left Row down 
+        for (int i = 0; i < 10; i++)
+        {
+            starterArea[i + 3][1] = 1;
+            gotoxy(1, i + 3);
+            printf("|");
+        }
+        // Right Row all the way down 
+        for (int i = 0; i < 30; i++)
+        {
+            starterArea[i + 3][COLS - 1] = 1;
+            gotoxy(COLS - 1, i + 3);
+            printf("|");
+        }
+        // the Row for the Right corner
+        for (int i = 0; i < 20; i++)
+        {
+            starterArea[i + 13][COLS - 41] = 1;
+            gotoxy(COLS - 41, i + 13);
+            printf("|");
+        }
+        //The door to the exit
+        for (int i = 0; i < 39; i++)
+        {
+            if (i > 10 && i < 30)
+            {
+                setcolor(CONSOLE_BROWN);
+                NumberForDoor = 9;
+            }
+            else
+            {
+                setcolor(CONSOLE_WHITE);
+                NumberForDoor = 1;
+            }
+            starterArea[32][COLS - 40 + i] = NumberForDoor;
+            gotoxy(COLS - 40 + i, 32);
+            printf("_");
+            
+        }
+
+    }
+}
+
 
 bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int starterArea[][COLS], int starterArrayValue, int targetArrayValue)
 {
@@ -386,46 +468,41 @@ bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int start
 
 void HitCheck(int SwordX, int SwordY, int area, Zombie& zombie, int howFar, int lastNumberPressed)
     {
-        if (area == 1)
+        
+        //gotoxy(40, 10);
+        //printf("SX: %d, ZX: %d SY: %d, ZY: %d",SwordX, zombie.ZombieposX, SwordY, zombie.ZombieposY );
+        for (int j = 0; j < howFar; j++)
         {
-            //gotoxy(40, 10);
-            //printf("SX: %d, ZX: %d SY: %d, ZY: %d",SwordX, zombie.ZombieposX, SwordY, zombie.ZombieposY );
-            for (int j = 0; j < howFar; j++)
+            for (int i = 0; i < zombie.ZombieSize; i++)
             {
-                for (int i = 0; i < zombie.ZombieSize; i++)
+                if (SwordX + j == zombie.ZombieposX + i && SwordY == zombie.ZombieposY)
                 {
-                    if (SwordX + j == zombie.ZombieposX + i && SwordY == zombie.ZombieposY)
+                    
+                    // Handle hit logic here
+                    zombie.Zombielives--; // Example: Reduce zombie's lives
+                    gotoxy(zombie.ZombieposX, zombie.ZombieposY);
+                    printf("       ");
+                    if (lastNumberPressed == 1)
                     {
-                        
-                        // Handle hit logic here
-                        zombie.Zombielives--; // Example: Reduce zombie's lives
-                        gotoxy(zombie.ZombieposX, zombie.ZombieposY);
-                        printf("       ");
-
-
-
-                        if (lastNumberPressed == 1)
-                        {
-                            zombie.ZombieposY -= 2;
-                        }
-                        else if (lastNumberPressed == 2)
-                        {
-                            zombie.ZombieposX -= 3;
-                        }
-                        else if (lastNumberPressed == 3)
-                        {
-                            zombie.ZombieposY += 2;
-                        }
-                        else if (lastNumberPressed == 4)
-                        {
-                            zombie.ZombieposX += 3;
-                        }
-
-                        
+                        zombie.ZombieposY -= 2;
                     }
+                    else if (lastNumberPressed == 2)
+                    {
+                        zombie.ZombieposX -= 3;
+                    }
+                    else if (lastNumberPressed == 3)
+                    {
+                        zombie.ZombieposY += 2;
+                    }
+                    else if (lastNumberPressed == 4)
+                    {
+                        zombie.ZombieposX += 3;
+                    }
+                                       
                 }
             }
         }
+        
     }
 
 void swordAnimations(int lastNumberPressed, int starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie)
@@ -1820,9 +1897,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
     // 8 = Bed
     // 9 = player
 
-    if (area == 1)
-    {
-        
+
         if (sword == 0 || sword == 2)
         {
             if (input == 119)
@@ -2333,10 +2408,10 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
             return abbruch = 0;
         }
 
-    }
-    }
+    
+}
 
-void PlayersMovement(int& input, int abbruch, int area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown)
+void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown)
 {
     int i;
     setlocale(LC_ALL, "");
@@ -2584,26 +2659,23 @@ void PlayersMovement(int& input, int abbruch, int area, int& sword, int starterA
             // für 7
             else if ((starterArea[PlayerY][PlayerX] == 7 || starterArea[PlayerY][PlayerX + 1] == 7 || starterArea[PlayerY][PlayerX + 2] == 7 || starterArea[PlayerY][PlayerX + 3] == 7 || starterArea[PlayerY][PlayerX + 4] == 7) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 7 || starterArea[PlayerY - 1][PlayerX + 1] == 7 || starterArea[PlayerY - 1][PlayerX + 2] == 7 || starterArea[PlayerY - 1][PlayerX + 3] == 7 || starterArea[PlayerY - 1][PlayerX + 4] == 7) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 7 || starterArea[PlayerY + 1][PlayerX + 1] == 7 || starterArea[PlayerY + 1][PlayerX + 2] == 7 || starterArea[PlayerY + 1][PlayerX + 3] == 7 || starterArea[PlayerY + 1][PlayerX + 4] == 7) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 7 || starterArea[PlayerY][PlayerX + 1 + 1] == 7 || starterArea[PlayerY][PlayerX + 2 + 1] == 7 || starterArea[PlayerY][PlayerX + 3 + 1] == 7 || starterArea[PlayerY][PlayerX + 4 + 1] == 7) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 7 || starterArea[PlayerY][PlayerX + 1 - 1] == 7 || starterArea[PlayerY][PlayerX + 2 - 1] == 7 || starterArea[PlayerY][PlayerX + 3 - 1] == 7 || starterArea[PlayerY][PlayerX + 4 - 1] == 7))
             {
-                if (keys[0] == 0)
-                {
-                    gotoxy(5, 46);
-                    printf("                     ");
-                    gotoxy(5, 46);
-                    printf("*The door is locked*");
-                    Sleep(1000);
-                    
-                }
-                else if(keys[0] == 1)
-                {
-                    gotoxy(5, 46);
-                    printf("                     ");
-                    gotoxy(5, 46);
-                    printf("*the door opens*");
-                    Sleep(1000);
-                }
+               
+                gotoxy(5, 46);
+                printf("                     ");
+                gotoxy(5, 46);
+                printf("*the door opens*");
+                Sleep(1000);
                 gotoxy(5, 46);
                 printf("                    ");
+
+                PlayerX = 22;
+                PlayerY = 10;
+                area = 2;
+                ChangeArea(area, starterArea);
+
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+                
+
             }
 
             //für 8
