@@ -416,6 +416,7 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
             if (i >= 3 && i < 7)
             {
                 setcolor(CONSOLE_BROWN);
+                starterArea[i + 3][1] = 2;
             }
             else
             {
@@ -444,7 +445,7 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
             if (i > 10 && i < 30)
             {
                 setcolor(CONSOLE_BROWN);
-                NumberForDoor = 9;
+                NumberForDoor = 3;
             }
             else
             {
@@ -461,7 +462,7 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
         for (int i = 0; i < 13; i++) {
             gotoxy(40 + i, 12);
             printf("_");
-
+            starterArea[12][40 + i] = 4;
         }
         setcolor(CONSOLE_WHITE);
         // Door to the closet
@@ -470,37 +471,52 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
         for (int i = 0; i < 10; i++) {
             gotoxy(112 + i, 2);
             printf("_");
+            starterArea[2][112 + i] = 5;
 
         }
-        setcolor(CONSOLE_WHITE);
-        // Bodies:
-        gotoxy(8,10);
-        printf("[X-X");
-        gotoxy(12, 10);
-        setcolor(CONSOLE_RED);
-        printf("\\~~~");
         setcolor(CONSOLE_WHITE);
 
         // open door
         gotoxy(32, 2);
         printf("          ");
+        for (i = 0; i < 10; i++)
+        {
+            starterArea[2][32 + i] = 6;
+        }
         gotoxy(42, 3);
         printf("\\");
+        starterArea[3][42] = 1;
         gotoxy(43, 4);
         printf("\\__ ");
+        memset(&starterArea[4][43], 1, 3 * sizeof(int));
         gotoxy(46, 5);
         printf("\\");
+        starterArea[5][46] = 1;
+
+        // Bodies:
+        gotoxy(8, 10);
+        printf("[X-X");
+        gotoxy(12, 10);
+        setcolor(CONSOLE_RED);
+        printf("\\~~~");
+        setcolor(CONSOLE_WHITE);
+        memset(&starterArea[10][8], 7, 8 * sizeof(int));
 
 
         // Transporting Bed
         gotoxy(152, 13);
         printf("[\033[0;31m=\033[0m=\033[0;31m=\033[0m=]");
+        memset(&starterArea[13][152], 8, 6 * sizeof(int));
         gotoxy(152, 14);
         printf("| \033[0;31m~~~\033[0m|");
+        memset(&starterArea[14][152], 8, 6 * sizeof(int));
         gotoxy(152, 15);
         printf("\033[0;31m|   ~\033[0m|");
+        memset(&starterArea[15][152], 8, 6 * sizeof(int));
         gotoxy(152, 16);
         printf("o----o");
+        memset(&starterArea[16][152], 8, 6 * sizeof(int));
+
 
 
 
@@ -539,6 +555,7 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
 
             gotoxy(126, 4);
             printf("[°-°]");
+            memset(&starterArea[4][126], 11, 5 * sizeof(int));
             gotoxy(128, 6);
             printf("\033[0;32m[-º_°]-\033[0m");
             gotoxy(128, 5);
@@ -591,6 +608,7 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
             printf("       ");
             firstTimeInArea[1] = true;
 
+            FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
         }
         
     }
@@ -2614,7 +2632,9 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
 void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown, bool firstTimeInArea[])
 {
     int i;
+    int k;
     setlocale(LC_ALL, "");
+
 
     //ECheck(area, playerX, playerY, starterArea, sword, waitForECheck, lastNumberPressed);
 
@@ -2781,10 +2801,45 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
     }
     else if (input == 101)
     {
+        int SeenValue = 0;
+        for (i = 1; i <= 2; i++)
+        {
+            if (starterArea[PlayerY][PlayerX + 4 + i] > 1)
+            {
+                SeenValue = starterArea[PlayerY][PlayerX + 4 + i];
+                break;
+            }
+        }
+        for (i = 1; i <= 2; i++)
+        {
+            if (starterArea[PlayerY][PlayerX - i] > 1)
+            {
+                SeenValue = starterArea[PlayerY][PlayerX - i];
+                break;
+            }
+        }
+        for (i = 0; i < 5; i++)
+        {
+            if (starterArea[PlayerY + 1][PlayerX + i] > 1)
+            {
+                SeenValue = starterArea[PlayerY + 1][PlayerX + i];
+                break;
+            }
+        }
+        for (i = 0; i < 5; i++)
+        {
+            if (starterArea[PlayerY - 1][PlayerX + i] > 1)
+            {
+                SeenValue = starterArea[PlayerY - 1][PlayerX + i];
+                break;
+            }
+        }
+        
+        
         if (area == 1)
         {
             //für 2
-            if ((starterArea[PlayerY][PlayerX] == 2 || starterArea[PlayerY][PlayerX + 1] == 2 || starterArea[PlayerY][PlayerX + 2] == 2 || starterArea[PlayerY][PlayerX + 3] == 2 || starterArea[PlayerY][PlayerX + 4] == 2) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 2 || starterArea[PlayerY - 1][PlayerX + 1] == 2 || starterArea[PlayerY - 1][PlayerX + 2] == 2 || starterArea[PlayerY - 1][PlayerX + 3] == 2 || starterArea[PlayerY - 1][PlayerX + 4] == 2) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 2 || starterArea[PlayerY + 1][PlayerX + 1] == 2 || starterArea[PlayerY + 1][PlayerX + 2] == 2 || starterArea[PlayerY + 1][PlayerX + 3] == 2 || starterArea[PlayerY + 1][PlayerX + 4] == 2) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 2 || starterArea[PlayerY][PlayerX + 1 + 1] == 2 || starterArea[PlayerY][PlayerX + 2 + 1] == 2 || starterArea[PlayerY][PlayerX + 3 + 1] == 2 || starterArea[PlayerY][PlayerX + 4 + 1] == 2) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 2 || starterArea[PlayerY][PlayerX + 1 - 1] == 2 || starterArea[PlayerY][PlayerX + 2 - 1] == 2 || starterArea[PlayerY][PlayerX + 3 - 1] == 2 || starterArea[PlayerY][PlayerX + 4 - 1] == 2))
+            if (SeenValue == 2)
             {
                 
                     gotoxy(5, 46);
@@ -2801,7 +2856,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             }
 
             //für 3
-            else if ((starterArea[PlayerY][PlayerX] == 3 || starterArea[PlayerY][PlayerX + 1] == 3 || starterArea[PlayerY][PlayerX + 2] == 3 || starterArea[PlayerY][PlayerX + 3] == 3 || starterArea[PlayerY][PlayerX + 4] == 3) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 3 || starterArea[PlayerY - 1][PlayerX + 1] == 3 || starterArea[PlayerY - 1][PlayerX + 2] == 3 || starterArea[PlayerY - 1][PlayerX + 3] == 3 || starterArea[PlayerY - 1][PlayerX + 4] == 3) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 3 || starterArea[PlayerY + 1][PlayerX + 1] == 3 || starterArea[PlayerY + 1][PlayerX + 2] == 3 || starterArea[PlayerY + 1][PlayerX + 3] == 3 || starterArea[PlayerY + 1][PlayerX + 4] == 3) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 3 || starterArea[PlayerY][PlayerX + 1 + 1] == 3 || starterArea[PlayerY][PlayerX + 2 + 1] == 3 || starterArea[PlayerY][PlayerX + 3 + 1] == 3 || starterArea[PlayerY][PlayerX + 4 + 1] == 3) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 3 || starterArea[PlayerY][PlayerX + 1 - 1] == 3 || starterArea[PlayerY][PlayerX + 2 - 1] == 3 || starterArea[PlayerY][PlayerX + 3 - 1] == 3 || starterArea[PlayerY][PlayerX + 4 - 1] == 3))
+            else if (SeenValue == 3)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2818,7 +2873,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             }
 
             //für 4
-            else if ((starterArea[PlayerY][PlayerX] == 4 || starterArea[PlayerY][PlayerX + 1] == 4 || starterArea[PlayerY][PlayerX + 2] == 4 || starterArea[PlayerY][PlayerX + 3] == 4 || starterArea[PlayerY][PlayerX + 4] == 4) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 4 || starterArea[PlayerY - 1][PlayerX + 1] == 4 || starterArea[PlayerY - 1][PlayerX + 2] == 4 || starterArea[PlayerY - 1][PlayerX + 3] == 4 || starterArea[PlayerY - 1][PlayerX + 4] == 4) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 4 || starterArea[PlayerY + 1][PlayerX + 1] == 4 || starterArea[PlayerY + 1][PlayerX + 2] == 4 || starterArea[PlayerY + 1][PlayerX + 3] == 4 || starterArea[PlayerY + 1][PlayerX + 4] == 4) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 4 || starterArea[PlayerY][PlayerX + 1 + 1] == 4 || starterArea[PlayerY][PlayerX + 2 + 1] == 4 || starterArea[PlayerY][PlayerX + 3 + 1] == 4 || starterArea[PlayerY][PlayerX + 4 + 1] == 4) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 4 || starterArea[PlayerY][PlayerX + 1 - 1] == 4 || starterArea[PlayerY][PlayerX + 2 - 1] == 4 || starterArea[PlayerY][PlayerX + 3 - 1] == 4 || starterArea[PlayerY][PlayerX + 4 - 1] == 4))
+            else if (SeenValue == 4)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2831,7 +2886,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
 
             }
             //für 5
-            else if ((starterArea[PlayerY][PlayerX] == 5 || starterArea[PlayerY][PlayerX + 1] == 5 || starterArea[PlayerY][PlayerX + 2] == 5 || starterArea[PlayerY][PlayerX + 3] == 5 || starterArea[PlayerY][PlayerX + 4] == 5) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 5 || starterArea[PlayerY - 1][PlayerX + 1] == 5 || starterArea[PlayerY - 1][PlayerX + 2] == 5 || starterArea[PlayerY - 1][PlayerX + 3] == 5 || starterArea[PlayerY - 1][PlayerX + 4] == 5) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 5 || starterArea[PlayerY + 1][PlayerX + 1] == 5 || starterArea[PlayerY + 1][PlayerX + 2] == 5 || starterArea[PlayerY + 1][PlayerX + 3] == 5 || starterArea[PlayerY + 1][PlayerX + 4] == 5) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 5 || starterArea[PlayerY][PlayerX + 1 + 1] == 5 || starterArea[PlayerY][PlayerX + 2 + 1] == 5 || starterArea[PlayerY][PlayerX + 3 + 1] == 5 || starterArea[PlayerY][PlayerX + 4 + 1] == 5) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 5 || starterArea[PlayerY][PlayerX + 1 - 1] == 5 || starterArea[PlayerY][PlayerX + 2 - 1] == 5 || starterArea[PlayerY][PlayerX + 3 - 1] == 5 || starterArea[PlayerY][PlayerX + 4 - 1] == 5))
+            else if (SeenValue == 5)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2844,7 +2899,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
 
             }
             //für 6 tools
-            else if ((starterArea[PlayerY][PlayerX] == 6 || starterArea[PlayerY][PlayerX + 1] == 6 || starterArea[PlayerY][PlayerX + 2] == 6 || starterArea[PlayerY][PlayerX + 3] == 6 || starterArea[PlayerY][PlayerX + 4] == 6) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 6 || starterArea[PlayerY - 1][PlayerX + 1] == 6 || starterArea[PlayerY - 1][PlayerX + 2] == 6 || starterArea[PlayerY - 1][PlayerX + 3] == 6 || starterArea[PlayerY - 1][PlayerX + 4] == 6) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 6 || starterArea[PlayerY + 1][PlayerX + 1] == 6 || starterArea[PlayerY + 1][PlayerX + 2] == 6 || starterArea[PlayerY + 1][PlayerX + 3] == 6 || starterArea[PlayerY + 1][PlayerX + 4] == 6) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 4 + 1] == 6) || starterArea[PlayerY][PlayerX + 4 + 2] == 6 || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 6 || starterArea[PlayerY][PlayerX - 2] == 6))
+            else if (SeenValue == 6)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2857,7 +2912,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
 
             }
             // für 7
-            else if ((starterArea[PlayerY][PlayerX] == 7 || starterArea[PlayerY][PlayerX + 1] == 7 || starterArea[PlayerY][PlayerX + 2] == 7 || starterArea[PlayerY][PlayerX + 3] == 7 || starterArea[PlayerY][PlayerX + 4] == 7) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 7 || starterArea[PlayerY - 1][PlayerX + 1] == 7 || starterArea[PlayerY - 1][PlayerX + 2] == 7 || starterArea[PlayerY - 1][PlayerX + 3] == 7 || starterArea[PlayerY - 1][PlayerX + 4] == 7) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 7 || starterArea[PlayerY + 1][PlayerX + 1] == 7 || starterArea[PlayerY + 1][PlayerX + 2] == 7 || starterArea[PlayerY + 1][PlayerX + 3] == 7 || starterArea[PlayerY + 1][PlayerX + 4] == 7) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 7 || starterArea[PlayerY][PlayerX + 1 + 1] == 7 || starterArea[PlayerY][PlayerX + 2 + 1] == 7 || starterArea[PlayerY][PlayerX + 3 + 1] == 7 || starterArea[PlayerY][PlayerX + 4 + 1] == 7) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 7 || starterArea[PlayerY][PlayerX + 1 - 1] == 7 || starterArea[PlayerY][PlayerX + 2 - 1] == 7 || starterArea[PlayerY][PlayerX + 3 - 1] == 7 || starterArea[PlayerY][PlayerX + 4 - 1] == 7))
+            else if (SeenValue == 7)
             {
                
                 gotoxy(5, 46);
@@ -2868,8 +2923,8 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 gotoxy(5, 46);
                 printf("                    ");
 
-                PlayerX = 22;
-                PlayerY = 10;
+                PlayerX = 42;
+                PlayerY = 11;
                 area = 2;
                 ChangeArea(area, starterArea, firstTimeInArea);
 
@@ -2878,8 +2933,8 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
 
             }
 
-            //für 8
-            else if ((starterArea[PlayerY][PlayerX] == 8 || starterArea[PlayerY][PlayerX + 1] == 8 || starterArea[PlayerY][PlayerX + 2] == 8 || starterArea[PlayerY][PlayerX + 3] == 8 || starterArea[PlayerY][PlayerX + 4] == 8) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 8 || starterArea[PlayerY - 1][PlayerX + 1] == 8 || starterArea[PlayerY - 1][PlayerX + 2] == 8 || starterArea[PlayerY - 1][PlayerX + 3] == 8 || starterArea[PlayerY - 1][PlayerX + 4] == 8) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 8 || starterArea[PlayerY + 1][PlayerX + 1] == 8 || starterArea[PlayerY + 1][PlayerX + 2] == 8 || starterArea[PlayerY + 1][PlayerX + 3] == 8 || starterArea[PlayerY + 1][PlayerX + 4] == 8) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 8 || starterArea[PlayerY][PlayerX + 1 + 1] == 8 || starterArea[PlayerY][PlayerX + 2 + 1] == 8 || starterArea[PlayerY][PlayerX + 3 + 1] == 8 || starterArea[PlayerY][PlayerX + 4 + 1] == 8) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 8 || starterArea[PlayerY][PlayerX + 1 - 1] == 8 || starterArea[PlayerY][PlayerX + 2 - 1] == 8 || starterArea[PlayerY][PlayerX + 3 - 1] == 8 || starterArea[PlayerY][PlayerX + 4 - 1] == 8))
+            //für 8 sickbed
+            else if (SeenValue == 8)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2891,7 +2946,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
             }
             //für 10 standard Zombie(kein loot)
-            else if ((starterArea[PlayerY][PlayerX] == 10 || starterArea[PlayerY][PlayerX + 1] == 10 || starterArea[PlayerY][PlayerX + 2] == 10 || starterArea[PlayerY][PlayerX + 3] == 10 || starterArea[PlayerY][PlayerX + 4] == 10) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 10 || starterArea[PlayerY - 1][PlayerX + 1] == 10 || starterArea[PlayerY - 1][PlayerX + 2] == 10 || starterArea[PlayerY - 1][PlayerX + 3] == 10 || starterArea[PlayerY - 1][PlayerX + 4] == 10) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 10 || starterArea[PlayerY + 1][PlayerX + 1] == 10 || starterArea[PlayerY + 1][PlayerX + 2] == 10 || starterArea[PlayerY + 1][PlayerX + 3] == 10 || starterArea[PlayerY + 1][PlayerX + 4] == 10) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 10 || starterArea[PlayerY][PlayerX + 1 + 1] == 10 || starterArea[PlayerY][PlayerX + 2 + 1] == 10 || starterArea[PlayerY][PlayerX + 3 + 1] == 10 || starterArea[PlayerY][PlayerX + 4 + 1] == 10) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 10 || starterArea[PlayerY][PlayerX + 1 - 1] == 10 || starterArea[PlayerY][PlayerX + 2 - 1] == 10 || starterArea[PlayerY][PlayerX + 3 - 1] == 10 || starterArea[PlayerY][PlayerX + 4 - 1] == 10))
+            else if (SeenValue == 10)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2903,7 +2958,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
             }
             //für 11 (some random stuff)
-            else if ((starterArea[PlayerY][PlayerX] == 11 || starterArea[PlayerY][PlayerX + 1] == 11 || starterArea[PlayerY][PlayerX + 2] == 11 || starterArea[PlayerY][PlayerX + 3] == 11 || starterArea[PlayerY][PlayerX + 4] == 11) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 11 || starterArea[PlayerY - 1][PlayerX + 1] == 11 || starterArea[PlayerY - 1][PlayerX + 2] == 11 || starterArea[PlayerY - 1][PlayerX + 3] == 11 || starterArea[PlayerY - 1][PlayerX + 4] == 11) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 11 || starterArea[PlayerY + 1][PlayerX + 1] == 11 || starterArea[PlayerY + 1][PlayerX + 2] == 11 || starterArea[PlayerY + 1][PlayerX + 3] == 11 || starterArea[PlayerY + 1][PlayerX + 4] == 11) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 11 || starterArea[PlayerY][PlayerX + 1 + 1] == 11 || starterArea[PlayerY][PlayerX + 2 + 1] == 11 || starterArea[PlayerY][PlayerX + 3 + 1] == 11 || starterArea[PlayerY][PlayerX + 4 + 1] == 11) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 11 || starterArea[PlayerY][PlayerX + 1 - 1] == 11 || starterArea[PlayerY][PlayerX + 2 - 1] == 11 || starterArea[PlayerY][PlayerX + 3 - 1] == 11 || starterArea[PlayerY][PlayerX + 4 - 1] == 11))
+            else if (SeenValue == 11)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2915,7 +2970,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
             }    
             //für 20 DoctorsZombie
-            else if ((starterArea[PlayerY][PlayerX] == 20 || starterArea[PlayerY][PlayerX + 1] == 20 || starterArea[PlayerY][PlayerX + 2] == 20 || starterArea[PlayerY][PlayerX + 3] == 20 || starterArea[PlayerY][PlayerX + 4] == 20) ||/*für oben*/ (starterArea[PlayerY - 1][PlayerX] == 20 || starterArea[PlayerY - 1][PlayerX + 1] == 20 || starterArea[PlayerY - 1][PlayerX + 2] == 20 || starterArea[PlayerY - 1][PlayerX + 3] == 20 || starterArea[PlayerY - 1][PlayerX + 4] == 20) || /*für unten*/ (starterArea[PlayerY + 1][PlayerX] == 20 || starterArea[PlayerY + 1][PlayerX + 1] == 20 || starterArea[PlayerY + 1][PlayerX + 2] == 20 || starterArea[PlayerY + 1][PlayerX + 3] == 20 || starterArea[PlayerY + 1][PlayerX + 4] == 20) || /*für rechts*/ (starterArea[PlayerY][PlayerX + 1] == 20 || starterArea[PlayerY][PlayerX + 1 + 1] == 20 || starterArea[PlayerY][PlayerX + 2 + 1] == 20 || starterArea[PlayerY][PlayerX + 3 + 1] == 20 || starterArea[PlayerY][PlayerX + 4 + 1] == 20) || /*für links*/ (starterArea[PlayerY][PlayerX - 1] == 20 || starterArea[PlayerY][PlayerX + 1 - 1] == 20 || starterArea[PlayerY][PlayerX + 2 - 1] == 20 || starterArea[PlayerY][PlayerX + 3 - 1] == 20 || starterArea[PlayerY][PlayerX + 4 - 1] == 20))
+            else if (SeenValue == 20)
             {
                 gotoxy(5, 46);
                 printf("                     ");
@@ -2933,8 +2988,11 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
             }
         }
+        else if (area == 2)
+        {
+            
+        }
     }
-
     else if (input == 32)
     {
 
