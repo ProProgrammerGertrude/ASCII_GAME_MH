@@ -211,8 +211,7 @@ public:
 
 
 
-void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown, bool firstTimeInArea[]);
-void AreaOfMap(int area, int starterArea[][COLS]);
+void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown, int firstTimeInArea[], Zombie zombies[]);
 int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& sword, int lastNumberPressed);
 void ECheck(int area, int starterArea[][COLS], int sword, int lastNumberPressed, int input);
 void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]);
@@ -220,7 +219,7 @@ void WaitingTime(int& waitForNextMove, int& waitForSwordAnimation, int lastNumbe
 void swordAnimations(int lastNumberPressed, int starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie);
 void HitCheck(int SwordX, int SwordY, int area, Zombie& zombie, int howFar, int lastNumberPressed);
 bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int starterArea[][COLS], int starterArrayValue, int targetArrayValue);
-void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[]);
+void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombie zombies[]);
 
 int main()
 {
@@ -237,7 +236,7 @@ int main()
     //0: labdoor 1: ?
     int keys[1] = { 0 };
     int waitForNextMove = 0;
-    bool firstTimeInArea[6] = { false };
+    int firstTimeInArea[6] = { 0 };
     cursoroff();
     setlocale(LC_ALL, "");
     HWND hwnd = GetConsoleWindow();
@@ -250,18 +249,17 @@ int main()
 
     gotoxy(PlayerX, PlayerY);
     printf("[°-°]");
-    AreaOfMap(area, starterArea);
     
-    area = 2;
-    ChangeArea(area, starterArea, firstTimeInArea);
     // X, Y, life, armor, damage, startspeed, speed, waitingtime, win, size, zombieDeathValue
     Zombie zombies[HowManyZombiesExist] = 
     {
-         Zombie(54,27, 3, 1, 2, 20, 20, 0, 0, 7, 20),  // zombie1 //Doctor
-         Zombie(120,29, 3, 1, 2, 20, 20, 0, 0, 7, 10),  // zombie2
+         Zombie(54,27, 1, 1, 2, 20, 20, 0, 0, 7, 20),  // zombie1 //Doctor
+         Zombie(120,29, 1, 1, 2, 20, 20, 0, 0, 7, 10),  // zombie2
          Zombie(125, 7, 1, 1, 2, 10, 10, 0, 0, 7, 10)  // zombie3 Area 1 (Hallway)
     };
      
+    area = 2;
+    ChangeArea(area, starterArea, firstTimeInArea, zombies);
     cursoroff();
 
     while (win == 0)
@@ -312,7 +310,7 @@ int main()
             if (waitForNextMove == 0 && swordAnimationPhase == 0)
             {
                 input = _getch();
-                PlayersMovement(input, abbruch, area, sword, starterArea, lastNumberPressed, swordAnimationPhase, keys, swordCooldown, firstTimeInArea);
+                PlayersMovement(input, abbruch, area, sword, starterArea, lastNumberPressed, swordAnimationPhase, keys, swordCooldown, firstTimeInArea, zombies);
                 ECheck(area, starterArea, sword, lastNumberPressed, input);
                 waitForNextMove++;
             }
@@ -328,13 +326,16 @@ int main()
                     swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
                     if (zombies[i].Zombielives <= 0)
                     {
-                       
-                        for (int j = 0; j < zombies[i].ZombieSize; j++)
+                        if ((area == 1 && i < 2) || (area == 2 && i == 2))
                         {
-                            starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
+                            for (int j = 0; j < zombies[i].ZombieSize; j++)
+                            {
+                                starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
+                            }
+                            gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
+                            printf("\033[0;32m[-X_X]-\033[0m");
                         }
-                        gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
-                        printf("\033[0;32m[-X_X]-\033[0m");
+                        
                     }
                 }
                 
@@ -381,30 +382,363 @@ int main()
     //printf("OHHHHH P.DIDDY NOOOOOOOOOOOO"),
     Sleep(5000);
 }
-void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
+
+void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombie zombies[])
 {
     int NumberForDoor = 1;
     system("cls");
     gotoxy(PlayerX, PlayerY);
     printf("[°-°]");
     int i = 0;
+    int k = 0;
     // set everything to 0
-    memset(starterArea, 0, ROWS * COLS * sizeof(int));
     
+    for (k = 0; k < ROWS; k++)
+    {
+        for (i = 0; i < COLS; i++)
+        {
+            starterArea[k][i] = 0;
+        }
+    }
+    if (area == 1)
+    {
+
+
+        //Boarder
+        gotoxy(4, 1);
+        printf("___________________________________________________________________________________________________________________________________");
+        for (i = 0; i < 132; i++)
+        {
+            starterArea[1][4 + i] = 1;
+        }
+        for (i = 2; i < 46; i++) {
+            gotoxy(3, i);
+            printf("|");
+            starterArea[i][3] = 1;
+            gotoxy(135, i);
+            printf("|");
+            starterArea[i][135] = 1;
+        }
+
+        gotoxy(4, 45);
+        printf("___________________________________________________________________________________________________________________________________");
+        for (i = 0; i < 132; i++)
+        {
+            starterArea[45][4 + i] = 1;
+        }
+        /*//Resurchtable
+        gotoxy(26, 28);
+        printf("__________________________");
+
+
+
+        for (int i = 29; i < 42; i++) {
+            gotoxy(25, i);
+            printf("%d", starterArea[i][26]);
+            gotoxy(52, i);
+            printf("|");
+        }
+
+        gotoxy(32, 30);
+        printf("Research Table");
+        gotoxy(26, 31);
+        printf("__________________________");
+        //Laptop
+        gotoxy(37, 32);
+        printf("|\\_      0~");
+        gotoxy(28, 33);
+        printf("Laptop   |  \\______");
+        gotoxy(37, 34);
+        printf("|    |++++|");
+        gotoxy(38, 35);
+        printf("\\_  |++++|");
+        gotoxy(40, 36);
+        printf("\\_|____|");
+        // Sketches
+        gotoxy(42, 37);
+        printf("_______");
+        gotoxy(41, 38);
+        printf("| #§|&| |");
+        gotoxy(28, 39);
+        printf("sketches     | ||§|& |");
+        gotoxy(41, 40);
+        printf("| $|§|| |");
+        gotoxy(41, 41);
+        printf("|_______|");
+
+
+
+        gotoxy(25, 42);
+        printf("|__________________________|");
+
+
+
+
+
+        //Junkttable
+        gotoxy(7, 2);
+        printf("________________________");
+
+        for (int i = 0; i < 9; i++) {
+            gotoxy(6, i + 3);
+            printf("|");
+            gotoxy(31, i + 3);
+            printf("|");
+        }
+
+        gotoxy(12, 4);
+        printf("Junk Table");
+        gotoxy(7, 5);
+        printf("________________________");
+        gotoxy(7, 6);
+        printf("j7m@o * p & g % h#q!w(9)r ^");
+        gotoxy(7, 7);
+        printf("ow(d g#jkdSfjh o%%492f%hs$");
+        gotoxy(7, 8);
+        printf("t@z W x~ y* 1!b ^c#d(3$");
+        gotoxy(7, 9);
+        printf("x1yOu7r4mkp6bRvgn9h0d");
+        gotoxy(7, 10);
+        printf("§f & g!h * D@k ^ l % z$r#q");
+        gotoxy(6, 11);
+        printf("|________________________|");
+        */
+
+        gotoxy(13, 4);
+        printf("_________________");
+        gotoxy(12, 5);
+        printf("| [Shelf]         |");
+        gotoxy(12, 6);
+        printf("| CH4  NH3  O2    |");
+        gotoxy(12, 7);
+        printf("| HNO3 KOH AcO    |");
+        gotoxy(12, 8);
+        printf("|-----------------|");
+        gotoxy(12, 9);
+        printf("| [Cabinet]       |");
+        gotoxy(12, 10);
+        printf("| Toxins Solvent  |");
+        gotoxy(12, 11);
+        printf("| EtOH   MeOH     |");
+        gotoxy(12, 12);
+        printf("|-----------------|");
+        gotoxy(12, 13);
+        printf("|[Safety Box]     |");
+        gotoxy(12, 14);
+        printf("| Gloves  Mask    |");
+        gotoxy(12, 15);
+        printf("|_________________|");
+
+        for (k = 0; k < 12; k++)
+        {
+            for (i = 0; i < 20; i++)
+            {
+                starterArea[4 + k][12 + i] = 2;
+            }
+        }
+
+
+        //Bed
+        gotoxy(50, 19);
+        printf("_________________ _______ ");
+        for (i = 0; i < 26; i++) starterArea[19][50 + i] = 8; 
+            
+        
+
+        for (int i = 0; i < 5; i++) {
+            gotoxy(49, i + 20);
+            printf("|");
+            starterArea[20 + i][49] = 8;
+            gotoxy(75, i + 20);
+            printf("|");
+            starterArea[20 + i][75] = 8;
+        }
+        gotoxy(60, 22);
+        printf("BED");
+
+        for (int i = 0; i < 4; i++)
+        {
+            gotoxy(67, i + 20);
+            printf("|");
+        }
+
+        gotoxy(50, 24);
+        printf("_________________________");
+        for (i = 0; i < 26; i++) starterArea[24][50 + i] = 8;
+
+
+
+
+        gotoxy(21, 33);
+        printf("_______________________________________________________________________________________________");
+        for (i = 0; i < 96; i++)
+        {
+            if ((i + 21) >= 25 && (i + 21) < 33)
+            {
+                starterArea[33][21 + i] = 5;
+            }
+            else if ((i + 21) >= 38 && (i + 21) < 45)
+            {
+                starterArea[33][21 + i] = 3;
+            }
+            else if ((i + 21) >= 53 && (i + 21) < 65)
+            {
+                starterArea[33][21 + i] = 4;
+            }
+            else if ((i + 21) >= 71 && (i + 21) < 83)
+            {
+                starterArea[33][21 + i] = 6;
+            }
+            else if ((i + 21) >= 91 && (i + 21) < 100)
+            {
+                starterArea[33][21 + i] = 11;
+            }
+            else
+            {
+                starterArea[33][21 + i] = 1;
+            }
+        }
+        for (int i = 0; i < 8; i++)
+        {
+            gotoxy(20, 34 + i);
+            printf("|");
+            starterArea[34 + i][20] = 1;
+            gotoxy(116, 34 + i);
+            printf("|");
+            starterArea[34 + i][116] = 1;
+        }
+        gotoxy(20, 41);
+        printf("|_______________________________________________________________________________________________|");
+        for (i = 0; i < 97; i++)
+        {
+            starterArea[41][20 + i] = 1;
+        }
+
+        // Microscope
+        gotoxy(26, 34);
+        printf("__________");
+        gotoxy(25, 35);
+        printf("|Microscope|");
+        gotoxy(25, 36);
+        printf("|__________|");
+        gotoxy(25, 37);
+        printf("|     /    |");
+        gotoxy(25, 38);
+        printf("|    / )   |");
+        gotoxy(25, 39);
+        printf("|  _\033[0;31m_\033[0m_|_   |");
+        gotoxy(25, 40);
+        printf("|__________|");
+
+        //Laptop
+        gotoxy(39, 35);
+        printf("|\\_      0~");
+        gotoxy(39, 36);
+        printf("|  \\______");
+        gotoxy(39, 37);
+        printf("|    |++++|");
+        gotoxy(40, 38);
+        printf("\\_  |++++|");
+        gotoxy(42, 39);
+        printf("\\_|____|");
+        gotoxy(42, 40);
+        printf("Laptop");
+
+        // Sketches
+        gotoxy(54, 35);
+        printf("_____________");
+        gotoxy(53, 36);
+        printf("| #§|&|§&!§~} |");
+        gotoxy(53, 37);
+        printf("| ||§|&~&§³$/ |");
+        gotoxy(53, 38);
+        printf("| $|§||~{²§&! |");
+        gotoxy(53, 39);
+        printf("|_____________|");
+        gotoxy(57, 40);
+        printf("Sketches");
+
+        //¯
+
+        gotoxy(72, 35);
+        printf(",");
+        gotoxy(71, 36);
+        printf("/(_____________");
+        gotoxy(70, 37);
+        printf("|  >:===========`");
+        gotoxy(71, 38);
+        printf(")(     Tools");
+        gotoxy(71, 39);
+        printf("\"\"");
+
+
+
+        gotoxy(90, 37);
+        printf("Some other sht");
+
+        //       _______
+        //      |       |
+        //      |       |
+        //      |_______|
+        // |__  |scanner|                  
+        // |  | |_______|
+        //      |       |
+        //      |       |
+        //      |       |
+        //      |_______|
+
+
+              /*
+              gotoxy(115, 32);
+              printf("_______");
+              gotoxy(114, 33);
+              printf("|Potions|");
+              gotoxy(114, 34);
+              printf("|_______|");
+              gotoxy(114, 35);
+              printf("|  \033[0;32m[ ]\033[0m  |  ");
+              gotoxy(114, 36);
+              printf("|  \033[0;32m[X~~\033[0m |   ");
+              gotoxy(114, 37);
+              printf("|_______|");
+
+              */
+
+        setcolor(CONSOLE_BROWN);
+        for (int i = 0; i < 18; i++) {
+            gotoxy(69 + i, 1);
+            printf("_");
+            starterArea[1][69 + i] = 7;
+
+        }
+        setcolor(CONSOLE_WHITE);
+
+    }
     if (area == 2)
     {
+        if (zombies[2].Zombielives <= 0)
+        {
+            for (int j = 0; j < zombies[2].ZombieSize; j++)
+            {
+                starterArea[zombies[2].ZombieposY][zombies[2].ZombieposX + j] = zombies[2].ZombieDeathValue;
+            }
+            gotoxy(zombies[2].ZombieposX, zombies[2].ZombieposY);
+            printf("\033[0;32m[-X_X]-\033[0m");
+        }
+
         // second row changed to 1
-        memset(&starterArea[2], 1, COLS * sizeof(int));
+        
         for (i = 1; i < COLS - 1; i++)
         {
+            starterArea[2][i] = 1;
             gotoxy(i, 2);
             printf("_");
         }
        
         // 11the row changed to 1
-        memset(&starterArea[12][0], 1, (COLS - 40) * sizeof(int));
         for (i = 1; i < COLS - 41; i++)
         {
+            starterArea[12][i] = 1;
             gotoxy(i, 12);
             printf("_");
         }
@@ -488,10 +822,30 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
         starterArea[3][42] = 1;
         gotoxy(43, 4);
         printf("\\__ ");
-        memset(&starterArea[4][43], 1, 3 * sizeof(int));
+        for (i = 0; i < 3; i++)
+        {
+            starterArea[4][43 + i] = 1;
+        }
         gotoxy(46, 5);
         printf("\\");
         starterArea[5][46] = 1;
+
+        // Transporting Bed
+        gotoxy(152, 13);
+        printf("[\033[0;31m=\033[0m=\033[0;31m=\033[0m=]");
+        gotoxy(152, 14);
+        printf("| \033[0;31m~~~\033[0m|");
+        gotoxy(152, 15);
+        printf("\033[0;31m|   ~\033[0m|");
+        gotoxy(152, 16);
+        printf("o----o");
+        for (k = 0; k < 4; k++)
+        {
+            for (i = 0; i < 6; i++)
+            {
+                starterArea[13 + k][152 + i] = 8;
+            }
+        }
 
         // Bodies:
         gotoxy(8, 10);
@@ -500,28 +854,50 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
         setcolor(CONSOLE_RED);
         printf("\\~~~");
         setcolor(CONSOLE_WHITE);
-        memset(&starterArea[10][8], 7, 8 * sizeof(int));
+        for (i = 0; i < 8; i++)
+        {
+            starterArea[10][8 + i] = 7;
+        }
+
+        // Bodie2:
+        gotoxy(150, 10);
+        printf("[X-X\033[0;31m]\033[0m");
+        if (firstTimeInArea[1] == 1 && zombies[2].Zombielives > 0)
+        {
+            gotoxy(126, 4);
+            printf("[X-\033[0;31m~~\033[0m");
+            for (i = 0; i < 5; i++)
+            {
+                starterArea[4][126 + i] = 11;
+            }
+
+            gotoxy(150, 10);
+            printf("[X-X\033[0;31m]\033[0m");
+            gotoxy(150, 10);
+            setcolor(CONSOLE_RED);
+            printf("~/");
+            setcolor(CONSOLE_WHITE);
+            for (i = 0; i < 5; i++)
+            {
+                starterArea[10][150] = 12;
+            }
+            firstTimeInArea[1] = 2;
+
+            gotoxy(148, 9);
+            printf("\033[0;32m[-ºO°]-\033[0m");
+            Sleep(1000);
+            gotoxy(148, 9);
+            printf("\033[0;32m[-º-°]-\033[0m");
+            Sleep(1000);
+            zombies[2].ZombieposX = 148;
+            zombies[2].ZombieposY = 9;
+            zombies[2].Zombiespeed = 5;
+            zombies[2].ZombieStartSpeed = 5;
+        }
 
 
-        // Transporting Bed
-        gotoxy(152, 13);
-        printf("[\033[0;31m=\033[0m=\033[0;31m=\033[0m=]");
-        memset(&starterArea[13][152], 8, 6 * sizeof(int));
-        gotoxy(152, 14);
-        printf("| \033[0;31m~~~\033[0m|");
-        memset(&starterArea[14][152], 8, 6 * sizeof(int));
-        gotoxy(152, 15);
-        printf("\033[0;31m|   ~\033[0m|");
-        memset(&starterArea[15][152], 8, 6 * sizeof(int));
-        gotoxy(152, 16);
-        printf("o----o");
-        memset(&starterArea[16][152], 8, 6 * sizeof(int));
 
-
-
-
-
-        if (!firstTimeInArea[1])
+        if (firstTimeInArea[1] == 0)
         {
             gotoxy(130, 5);
             printf("Oh my god Help!!!");
@@ -555,7 +931,10 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
 
             gotoxy(126, 4);
             printf("[°-°]");
-            memset(&starterArea[4][126], 11, 5 * sizeof(int));
+            for (i = 0; i < 5; i++)
+            {
+                starterArea[4][126 + i] = 11;
+            }
             gotoxy(128, 6);
             printf("\033[0;32m[-º_°]-\033[0m");
             gotoxy(128, 5);
@@ -606,45 +985,37 @@ void ChangeArea(int& area, int starterArea[][COLS], bool firstTimeInArea[])
             Sleep(100);
             gotoxy(126, 6);
             printf("       ");
-            firstTimeInArea[1] = true;
+            firstTimeInArea[1] = 1;
 
             FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
         }
         
+        if (firstTimeInArea[1] > 1)
+        {
+            gotoxy(126, 4);
+            printf("[X-\033[0;31m~~\033[0m");
+            for (i = 0; i < 5; i++)
+            {
+                starterArea[4][126 + i] = 11;
+            }
+
+            gotoxy(150, 10);
+            printf("[X-X\033[0;31m]\033[0m");
+            gotoxy(150, 10);
+            setcolor(CONSOLE_RED);
+            printf("~/");
+            setcolor(CONSOLE_WHITE);
+            for (i = 0; i < 5; i++)
+            {
+                starterArea[10][150] = 12;
+            }
+
+        }
+       
+
     }
 }
 
-//________________________________          _______________________________________________________________________________________________________________________
-//|                                         \                                                       ~~~                                                           |
-//|                                          \__                                                                                                                  |
-//|                                             \                                                                            [X_X]                                |
-//|                                                                                                                                                               |
-//|                                                                                                                                                               |
-//|                                                                                                                                                               |
-//|                                                                                                                                                               |
-//|      [X-X\~~~                                                                                                                                                 |
-//|                                                                                                                                                               |
-//|________________________________________________________________________________________________________________________                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                            [====]     |
-//                                                                                                                        |                            | ~~~|     |
-//                                                                                                                        |                            |    |     |
-//                                                                                                                        |                            o----o     |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |                                       |
-//                                                                                                                        |_______________________________________|
 bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int starterArea[][COLS], int starterArrayValue, int targetArrayValue)
 {
     int x = starterX; 
@@ -1634,19 +2005,27 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
     {
         if (input == 119)
         {
-            gotoxy(PlayerX + 3, PlayerY - 1);
-            printf("|");
+            if (starterArea[PlayerY - 1][PlayerX + 3] == 0)
+            {
+                gotoxy(PlayerX + 3, PlayerY - 1);
+                printf("|");
+            }
         }
         else if (input == 97)
         {
-            gotoxy(PlayerX - 3, PlayerY);
-            printf("--<");
-           
+            if (starterArea[PlayerY][PlayerX - 3] == 0 && starterArea[PlayerY][PlayerX - 2] == 0 && starterArea[PlayerY][PlayerX - 1] == 0)
+            {
+                gotoxy(PlayerX - 3, PlayerY);
+                printf("--<");
+            }
         }
         else if (input == 115)
         {
-            gotoxy(PlayerX + 1, PlayerY + 1);
-            printf("|");
+            if (starterArea[PlayerY - 1][PlayerX + 3] == 0)
+            {
+                gotoxy(PlayerX + 1, PlayerY + 1);
+                printf("|");
+            }
         }
         else if (input == 100)
         {
@@ -1756,272 +2135,6 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf("   ");
             }
         }
-    }
-}
-
-void AreaOfMap(int area, int starterArea[][COLS])
-{
-    if (area == 1)
-    {
-        
-        
-        //Boarder
-        gotoxy(4, 1);
-        printf("___________________________________________________________________________________________________________________________________");
-
-        for (int i = 2; i < 46; i++) {
-            gotoxy(3, i);
-            printf("|");
-            gotoxy(135, i);
-            printf("|");
-        }
-        
-        gotoxy(4, 45);
-        printf("___________________________________________________________________________________________________________________________________");
-       
-        /*//Resurchtable
-        gotoxy(26, 28);
-        printf("__________________________");
-
-
-
-        for (int i = 29; i < 42; i++) {
-            gotoxy(25, i);
-            printf("%d", starterArea[i][26]);
-            gotoxy(52, i);
-            printf("|");
-        }
-        
-        gotoxy(32, 30);
-        printf("Research Table");
-        gotoxy(26, 31);
-        printf("__________________________");
-        //Laptop
-        gotoxy(37, 32);
-        printf("|\\_      0~");
-        gotoxy(28, 33);
-        printf("Laptop   |  \\______");
-        gotoxy(37, 34);
-        printf("|    |++++|");
-        gotoxy(38, 35);
-        printf("\\_  |++++|");
-        gotoxy(40, 36);
-        printf("\\_|____|");
-        // Sketches
-        gotoxy(42, 37);
-        printf("_______");
-        gotoxy(41, 38);
-        printf("| #§|&| |");
-        gotoxy(28, 39);
-        printf("sketches     | ||§|& |");
-        gotoxy(41, 40);
-        printf("| $|§|| |");
-        gotoxy(41, 41);
-        printf("|_______|");
-       
-        
-        
-        gotoxy(25, 42);
-        printf("|__________________________|");
-        
-
-       
-
-        
-        //Junkttable
-        gotoxy(7, 2);
-        printf("________________________");
-
-        for (int i = 0; i < 9; i++) {
-            gotoxy(6, i + 3);
-            printf("|");
-            gotoxy(31, i + 3);
-            printf("|");
-        }
-
-        gotoxy(12, 4);
-        printf("Junk Table");
-        gotoxy(7, 5);
-        printf("________________________");
-        gotoxy(7, 6);
-        printf("j7m@o * p & g % h#q!w(9)r ^");
-        gotoxy(7, 7);
-        printf("ow(d g#jkdSfjh o%%492f%hs$");
-        gotoxy(7, 8);
-        printf("t@z W x~ y* 1!b ^c#d(3$");
-        gotoxy(7, 9);
-        printf("x1yOu7r4mkp6bRvgn9h0d");
-        gotoxy(7, 10);
-        printf("§f & g!h * D@k ^ l % z$r#q");
-        gotoxy(6, 11);
-        printf("|________________________|");
-        */
-
-        gotoxy(13, 4);
-        printf("_________________");
-        gotoxy(12, 5);
-        printf("| [Shelf]         |");
-        gotoxy(12, 6);
-        printf("| CH4  NH3  O2    |");
-        gotoxy(12, 7);
-        printf("| HNO3 KOH AcO    |");
-        gotoxy(12, 8);
-        printf("|-----------------|");
-        gotoxy(12, 9);
-        printf("| [Cabinet]       |");
-        gotoxy(12, 10);
-        printf("| Toxins Solvent  |");
-        gotoxy(12, 11);
-        printf("| EtOH   MeOH     |");
-        gotoxy(12, 12);
-        printf("|-----------------|");
-        gotoxy(12, 13);
-        printf("|[Safety Box]     |");
-        gotoxy(12, 14);
-        printf("| Gloves  Mask    |");
-        gotoxy(12, 15);
-        printf("|_________________|");
-        
-       
-        //Bed
-        gotoxy(50, 19);
-        printf("_________________ _______ ");
-
-        for (int i = 0; i < 5; i++) {
-            gotoxy(49, i + 20);
-            printf("|");
-            gotoxy(75, i + 20);
-            printf("|");
-        }
-        gotoxy(60, 22);
-        printf("BED");
-
-        for (int i = 0; i < 4; i++)
-        {
-            gotoxy(67, i + 20);
-            printf("|");
-        }
-
-        gotoxy(50, 24);
-        printf("_________________________");
-
-        for (int i = 0; i < 5; i++)
-        {
-            gotoxy(67, i + 20);
-            printf("|");
-        }
-
-
-        gotoxy(21, 33);
-        printf("_______________________________________________________________________________________________");
-        for (int i = 0; i < 8; i++)
-        {
-            gotoxy(20, 34 + i);
-            printf("|");
-            gotoxy(116, 34 + i);
-            printf("|");
-        }
-        gotoxy(20, 41);
-        printf("|_______________________________________________________________________________________________|");
-
-        // Microscope
-        gotoxy(26, 34);
-        printf("__________");
-        gotoxy(25, 35);
-        printf("|Microscope|");
-        gotoxy(25, 36);
-        printf("|__________|");
-        gotoxy(25, 37);
-        printf("|     /    |");
-        gotoxy(25, 38);
-        printf("|    / )   |");
-        gotoxy(25, 39);
-        printf("|  _\033[0;31m_\033[0m_|_   |");
-        gotoxy(25, 40);
-        printf("|__________|");
-        
-        //Laptop
-        gotoxy(39, 35);
-        printf("|\\_      0~");
-        gotoxy(39, 36);
-        printf("|  \\______");
-        gotoxy(39, 37);
-        printf("|    |++++|");
-        gotoxy(40, 38);
-        printf("\\_  |++++|");
-        gotoxy(42, 39);
-        printf("\\_|____|");
-        gotoxy(42, 40);
-        printf("Laptop");
-
-        // Sketches
-        gotoxy(54, 35);
-        printf("_____________");
-        gotoxy(53, 36);
-        printf("| #§|&|§&!§~} |");
-        gotoxy(53, 37);
-        printf("| ||§|&~&§³$/ |");
-        gotoxy(53, 38);
-        printf("| $|§||~{²§&! |");
-        gotoxy(53, 39);
-        printf("|_____________|");
-        gotoxy(57, 40);
-        printf("Sketches");
-        
-        //¯
-        
-        gotoxy(72, 35);
-        printf(",");
-        gotoxy(71, 36);
-        printf("/(_____________");
-        gotoxy(70, 37);
-        printf("|  >:===========`");
-        gotoxy(71, 38);
-        printf(")(     Tools");
-        gotoxy(71, 39);
-        printf("\"\"");
-        
-
-
-        gotoxy(90, 37);
-        printf("Some other sht");
-
-  //       _______
-  //      |       |
-  //      |       |
-  //      |_______|
-  // |__  |scanner|                  
-  // |  | |_______|
-  //      |       |
-  //      |       |
-  //      |       |
-  //      |_______|
-
-
-        /*
-        gotoxy(115, 32);
-        printf("_______");
-        gotoxy(114, 33);
-        printf("|Potions|");
-        gotoxy(114, 34);
-        printf("|_______|");
-        gotoxy(114, 35);
-        printf("|  \033[0;32m[ ]\033[0m  |  ");
-        gotoxy(114, 36);
-        printf("|  \033[0;32m[X~~\033[0m |   ");
-        gotoxy(114, 37);
-        printf("|_______|");
-
-        */
-        
-        setcolor(CONSOLE_BROWN);
-        for (int i = 0; i < 18; i++) {
-            gotoxy(69 + i, 1);
-            printf("_");
-            
-        }
-        setcolor(CONSOLE_WHITE);
-
     }
 }
 
@@ -2201,7 +2314,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         if (starterArea[PlayerY][PlayerX - 3] == 0)
                         {
                             gotoxy(PlayerX - 3, PlayerY);
-                            printf(" ");
+                            printf("");
                         }
                         if (starterArea[PlayerY][PlayerX + 5] == 0 && starterArea[PlayerY][PlayerX + 6] == 0 && starterArea[PlayerY][PlayerX + 7] == 0)
                         {
@@ -2629,7 +2742,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
     
 }
 
-void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown, bool firstTimeInArea[])
+void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown, int firstTimeInArea[], Zombie zombies[])
 {
     int i;
     int k;
@@ -2677,8 +2790,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
         }
         else
         {
-            lastNumberPressed = 1;
-
+            //lastNumberPressed = 1;
             //playerY++;
         }
     }
@@ -2714,7 +2826,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
         }
         else
         {
-            lastNumberPressed = 2;
+            //lastNumberPressed = 2;
 
             //playerX += 2;
 
@@ -2753,7 +2865,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
         }
         else
         {
-            lastNumberPressed = 3;
+            //lastNumberPressed = 3;
 
             // playerY--;
 
@@ -2793,7 +2905,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
         }
         else
         {
-            lastNumberPressed = 4;
+            //lastNumberPressed = 4;
 
             //playerX -= 2;
 
@@ -2926,7 +3038,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 PlayerX = 42;
                 PlayerY = 11;
                 area = 2;
-                ChangeArea(area, starterArea, firstTimeInArea);
+                ChangeArea(area, starterArea, firstTimeInArea, zombies);
 
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
                 
@@ -2990,7 +3102,149 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
         }
         else if (area == 2)
         {
-            
+            // door to the lagerraum
+            if (SeenValue == 2)
+            {
+
+                gotoxy(5, 46);
+                printf("                            ");
+                gotoxy(5, 46);
+                printf("*the door opens (lagerraum)*");
+                Sleep(1000);
+                gotoxy(5, 46);
+                printf("                            ");
+
+
+                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+
+            }
+            //door to the exit
+            else if (SeenValue == 3)
+            {
+
+                gotoxy(5, 46);
+                printf("                            ");
+                gotoxy(5, 46);
+                printf("*the door opens (exit)*");
+                Sleep(1000);
+                gotoxy(5, 46);
+                printf("                            ");
+
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+
+            }
+            // door to the lab
+            else if (SeenValue == 4)
+            {
+
+                gotoxy(5, 46);
+                printf("                            ");
+                gotoxy(5, 46);
+                printf("*the door opens (lab)*");
+                Sleep(1000);
+                gotoxy(5, 46);
+                printf("                            ");
+
+                PlayerX = 69;
+                PlayerY = 2;
+                area = 1;
+                ChangeArea(area, starterArea, firstTimeInArea, zombies);
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+
+            }
+            // door to the closet
+            else if (SeenValue == 5)
+            {
+
+                gotoxy(5, 46);
+                printf("                            ");
+                gotoxy(5, 46);
+                printf("*the door opens (closet)*");
+                Sleep(1000);
+                gotoxy(5, 46);
+                printf("                            ");
+
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+
+            }
+            // the open door
+            else if (SeenValue == 6)
+            {
+
+                gotoxy(5, 46);
+                printf("                            ");
+                gotoxy(5, 46);
+                printf("*the door opens (openDoor)*");
+                Sleep(1000);
+                gotoxy(5, 46);
+                printf("                            ");
+
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+
+            }
+            // left dead person
+            else if (SeenValue == 7)
+            {
+                gotoxy(5, 46);
+                printf("This person died a terrifying death");
+                Sleep(3000);
+                gotoxy(5, 46);
+                printf("                                   ");
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+            }
+            // the rolling bed
+            else if (SeenValue == 8)
+            {
+                gotoxy(5, 46);
+                printf("what happend to the person on that bed?");
+                Sleep(4000);
+                gotoxy(5, 46);
+                printf("                                       ");
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+            }
+            // the fast Zombie
+            else if (SeenValue == 10)
+            {
+                gotoxy(5, 46);
+                printf("Is he like a mutation or what was that");
+                Sleep(3000);
+                gotoxy(5, 46);
+                printf("                                      ");
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+            }
+            // the eaten up person
+            else if (SeenValue == 11)
+            {
+                gotoxy(5, 46);
+                printf("Hey are you still alive?");
+                Sleep(2000);
+                gotoxy(5, 46);
+                printf("                        ");
+                gotoxy(5, 46);
+                printf("*silence*");
+                Sleep(1000);
+                gotoxy(5, 46);
+                printf("         ");
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+            }
+            else if (SeenValue == 12)
+            {
+                gotoxy(5, 46);
+                printf("yeah I dont think hes alive!");
+                Sleep(2000);
+                gotoxy(5, 46);
+                printf("                            ");
+
+                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+            }
         }
     }
     else if (input == 32)
