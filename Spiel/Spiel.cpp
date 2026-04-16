@@ -8,221 +8,48 @@
 #include <cmath>
 #include <stack>
 #include "Map_Array.h"
-
+#include <vector>
+#include "Zombie.h"
+#include "GameFunctions.h"
 
 #define w 119
+#define UP 72
 #define a 97
+#define LEFT 75
 #define s 115
+#define RIGHT 80
 #define d 100
+#define DOWN 77
 #define SPACEBAR  32
 #define e 101
 #define ROWS 47
 #define COLS 162
 #define PlayerSize 4
-#define HowManyZombiesExist 3
-int PlayerX = 42;//62 //42
-int PlayerY = 11;//17 // 11
-
+#define HowManyZombiesExist 8
+int PlayerX = 10;//62 //42 //115 // 55 // 10
+int PlayerY = 29;//17 // 11 //16 // 29 // 29
 
 using namespace std;
-// Creating a shortcut for int, int pair type
-typedef pair<int, int> Pair;
 
-// Creating a shortcut for pair<int, pair<int, int>> type
-typedef pair<double, pair<int, int> > pPair;
-
-// A structure to hold the necessary parameters
-struct cell {
-    // Row and Column index of its parent
-    // Note that 0 <= i <= ROW-1 & 0 <= j <= COL-1
-    int parent_i, parent_j;
-    // f = g + h
-    double f, g, h;
-};
-
-// A Utility Function to check whether given cell (row, col)
-// is a valid cell or not.
-bool isValid(int row, int col)
-{
-    // Returns true if row number and column number
-    // is in range
-    return (row >= 0) &&
-        (row < ROWS) &&
-        (col >= 0) &&
-        (col < COLS);
-}
-
-// A Utility Function to check whether the given cell is
-// blocked or not
-bool isUnBlocked(int starterArea[][COLS], int row, int col, Pair src, int directionX, int directionY)
-{
-    bool result = true;
-    if (row == src.first + directionY && col == src.second + directionX) {
-        result = ((starterArea[row][col] == 0 || starterArea[row][col] == 9) &&
-            (starterArea[row][col + 1] == 0 || starterArea[row][col + 1] == 9) &&
-            (starterArea[row][col + 2] == 0 || starterArea[row][col + 2] == 9) &&
-            (starterArea[row][col + 3] == 0 || starterArea[row][col + 3] == 9) &&
-            (starterArea[row][col + 4] == 0 || starterArea[row][col + 4] == 9) &&
-            (starterArea[row][col + 5] == 0 || starterArea[row][col + 5] == 9) &&
-            (starterArea[row][col + 6] == 0 || starterArea[row][col + 6] == 9));
-    }
-    else {
-        result = ((starterArea[row][col] == 0 || starterArea[row][col] == 9) &&
-            (starterArea[row][col + 1] == 0 || starterArea[row][col + 1] == 9) &&
-            (starterArea[row][col + 2] == 0 || starterArea[row][col + 2] == 9) &&
-            (starterArea[row][col + 3] == 0 || starterArea[row][col + 3] == 9) &&
-            (starterArea[row][col + 4] == 0 || starterArea[row][col + 4] == 9) &&
-            (starterArea[row][col + 5] == 0 || starterArea[row][col + 5] == 9));
-    }
-
-    //printf("Checking Cell (%d, %d) -> %s\n", row, col, result ? "Open" : "Blocked");
-    return result;
-}
-
-// A Utility Function to check whether destination cell has
-// been reached or not
-bool isDestination(int row, int col, int destY, int destX) {
-    int i;
-    //for ( i = 0; i < 5; i++)
-    //{
-
-        if (row == destY && col == destX) 
-        {
-            //printf("Checking: row=%d, col=%d, dest=(%d, %d)\n", row, col, dest.first, dest.second);
-            //printf("Destination reached!\n");
-            return true;
-        }
-    //}
-    //printf("Checking: row=%d, col=%d, i = %d dest=(%d, %d)\n", row, col, i, dest.first, dest.second);
-    //printf("Not a destination.\n");
-    return false;
-}
-
-// A Utility Function to calculate the 'h' heuristics.
-double calculateHValue(int row, int col, Pair dest)
-{
-    // Return using the distance formula
-    return ((double)sqrt(
-        (row - dest.first) * (row - dest.first)
-        + (col - dest.second) * (col - dest.second)));
-}
-
-// A Utility Function to trace the path from the source
-// to destination
-void tracePath(cell cellDetails[][COLS], int row, int col,int& ZombieposX,int& ZombieposY, int& waitForNextZombieMove, bool& ZombieXMove)
-{
-    //int row = destY;
-    //int col = destX;
-    int XChange = 0;
-    int YChange = 0;
-    stack<Pair> Path;
-
-    if (cellDetails[row][col].parent_i == -1 && cellDetails[row][col].parent_j == -1) {
-        //printf("Processing Cell: (%d, %d) -> f: %.2f, g: %.2f, h: %.2f\n", row, col, cellDetails[row][col].f, cellDetails[row][col].g, cellDetails[row][col].h);
-
-        //return;
-    }
-    // Reconstruct the path
-    while (!(cellDetails[row][col].parent_i == row && cellDetails[row][col].parent_j == col)) {
-        Path.push(make_pair(row, col));
-        int temp_row = cellDetails[row][col].parent_i;
-        int temp_col = cellDetails[row][col].parent_j;
-        row = temp_row;
-        col = temp_col;
-        //printf("z");
-    }
-    Path.push(make_pair(row, col)); // Push the starting position
-
-    // Find the first move after the start position
-    while (!Path.empty()) {
-        pair<int, int> p = Path.top();
-        Path.pop();
-        
-        // If this is the first move after the start, update Zombie position
-        if (!(p.first == ZombieposY && p.second == ZombieposX)) 
-        {
-            if (ZombieposX - p.second < -1)
-            {
-                XChange--;
-                ZombieposX++;
-
-            }
-            else
-            {
-                XChange = ZombieposX - p.second;
-                ZombieposX = p.second;
-            }
-            YChange = ZombieposY - p.first;
-            ZombieposY = p.first;
-            break;  // Exit loop after finding the first move
-
-        }
-    }
-    if (XChange != 0)
-        ZombieXMove = true;
-    else
-        ZombieXMove = false;
-    // Move the zombie to the new position
-    
-    gotoxy(ZombieposX + XChange, ZombieposY + YChange);
-    printf("       ");
-    gotoxy(ZombieposX, ZombieposY);
-    printf("\033[0;32m[-º_°]-\033[0m");
-       
-    waitForNextZombieMove++;
-}
-class Zombie
-{
-public:
-    int Zombielives;
-    int ZombieArmor;
-    int Zombiedamage;
-    int ZombieStartSpeed;
-    int Zombiespeed;
-    int ZombieposX;
-    int ZombieposY;
-    int waitForNextZombieMove;
-    int win;
-    int playerX;
-    int playerY;
-    int ZombieSize;
-    int ZombieDeathValue;
-    bool ZombieXMove;
-
-    Pair src;
-    
-    // Constructor to initialize values
-    Zombie(int posX, int posY, int lives, int armor, int damage,int startspeed, int speed, int waitfornextzombiemove, int win, int size, int zombieDeathValue) {
-        Zombielives = lives;
-        ZombieArmor = armor;
-        Zombiedamage = damage;
-        ZombieStartSpeed = startspeed;
-        Zombiespeed = speed;
-        ZombieposX = posX;
-        ZombieposY = posY;
-        ZombieSize = size;
-        ZombieDeathValue = zombieDeathValue;
-        waitForNextZombieMove = waitfornextzombiemove;
-
-        src = make_pair(ZombieposY, ZombieposX);
-    }
-    void CloseRangeMovement(int starterArea[][COLS],Pair src,Pair dest,int& waitForNextZombieMove, int& win, bool& ZombieXMove, int ZombieDeathValue);
-};
-
-
-
-void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown, int firstTimeInArea[], Zombie zombies[]);
-int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& sword, int lastNumberPressed);
-void ECheck(int area, int starterArea[][COLS], int sword, int lastNumberPressed, int input);
-void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]);
+void PlayersMovement(int& input, int abbruch, int& area, int& sword, char starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int inventory[], int& swordCooldown, int firstTimeInArea[], Zombie zombies[]);
+int Borders(int area, int& abbruch, char starterArea[][COLS], int input, int& sword, int lastNumberPressed);
+void ECheck(int area, char starterArea[][COLS], int sword, int lastNumberPressed, int input);
+void Sword(int sword, int& lastNumberPressed, int input, char starterArea[][COLS]);
 void WaitingTime(int& waitForNextMove, int& waitForSwordAnimation, int lastNumberPressed, int& swordCooldown, Zombie zombies[]);
-void swordAnimations(int lastNumberPressed, int starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie);
+void swordAnimations(int lastNumberPressed, char starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie);
 void HitCheck(int SwordX, int SwordY, int area, Zombie& zombie, int howFar, int lastNumberPressed);
-bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int starterArea[][COLS], int starterArrayValue, int targetArrayValue);
-void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombie zombies[]);
+void ChangeArea(int& area, char starterArea[][COLS], int firstTimeInArea[],int inventory[], Zombie zombies[]);
+void BoxMaker(char starterArea[][COLS], int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, int value, char zeichen);
+void TextPrinter(int x, int y, char* text, int time);
+void ZombieMoves(Zombie zombies[], int area, int i, int& win);
+void AttackCheck(Zombie zombies[], int& swordAnimationPhase, int& waitForSwordAnimation, int& swordCooldown, int lastNumberPressed, int area);
+void PrintRemover(char starterArea[][COLS], int x, int y);
 
 int main()
 {
+    SetConsoleOutputCP(CP_UTF8);
+
+
     int win = 0;
     int input = 0;
     int area = 1;
@@ -233,143 +60,92 @@ int main()
     int swordCooldown = 0;
     int testchange = 0;
     int lastNumberPressed = 5;
-    //0: labdoor 1: ?
-    int keys[1] = { 0 };
+    //0: labdoor, 1: laptop looked at // 2: acids // 3: cleaning fluids // 4: Sample Jar // 5: Gloves // 6: screwdriver // 7: Clamps // 8: EG key 
+    //9: generator, // 10 code4Key // 11: philips key
+    int inventory[12] = { 0 };
     int waitForNextMove = 0;
     int firstTimeInArea[6] = { 0 };
     cursoroff();
-    setlocale(LC_ALL, "");
-    HWND hwnd = GetConsoleWindow();
-    ShowWindow(hwnd, SW_MAXIMIZE);
-    SetConsoleOutputCP(CP_UTF8);
+    
+ 
+
+    ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
+
+    Sleep(500);
 
     srand((unsigned)time(NULL));
     
 
-
     gotoxy(PlayerX, PlayerY);
-    printf("[°-°]");
-    
-    // X, Y, life, armor, damage, startspeed, speed, waitingtime, win, size, zombieDeathValue
+    printf("[\xC2\xB0-\xC2\xB0]");
+
+    // X, Y, life, armor, damage, startspeed, speed, waitingtime, size, zombieDeathValue, area
     Zombie zombies[HowManyZombiesExist] = 
     {
-         Zombie(54,27, 1, 1, 2, 20, 20, 0, 0, 7, 20),  // zombie1 //Doctor
-         Zombie(120,29, 1, 1, 2, 20, 20, 0, 0, 7, 10),  // zombie2
-         Zombie(125, 7, 1, 1, 2, 10, 10, 0, 0, 7, 10)  // zombie3 Area 1 (Hallway)
+         Zombie( 54, 27, 3, 1, 2, 20, 20,  7, 7, 20, 1), // zombie0 //Doctor
+         Zombie(120, 29, 3, 1, 2, 20, 20,  5, 7, 10, 1), // zombie1
+         Zombie(125,  7, 1, 1, 2, 10, 10,  0, 7, 10, 2), // zombie2 (Hallway)
+         Zombie(  2,  4, 2, 1, 2, 20, 20,  2, 7, 10, 3), // zombie3 (storage)
+         Zombie( 55, 15, 2, 1, 2, 20, 20,  5, 7, 10, 3), // zombie4 (storage)
+         Zombie( 59,  7, 2, 1, 2, 15, 15,  0, 7, 10, 6), // zombie5 (locker)
+         Zombie( 82, 28, 1, 1, 2, 50, 50, 30, 7, 10, 6), // zombie6 (locker)
+         Zombie( 50,  4, 5, 1, 2, 30, 30, 20, 7, 11, 6)  // zombie7 (locker)
     };
-     
-    area = 2;
-    ChangeArea(area, starterArea, firstTimeInArea, zombies);
+
+    area = 6;
+
+    if (area == 1)
+    {
+        PlayerX = 62;
+        PlayerY = 17;
+    }
+    else if (area == 2)
+    {
+        PlayerX = 42;
+        PlayerY = 11;
+    }
+    else if (area == 3)
+    {
+        PlayerX = 115;
+        PlayerY = 16;
+    }
+    else if (area == 4)
+    {
+        PlayerX = 55;
+        PlayerY = 29;
+    }
+    else if (area == 5)
+    {
+        PlayerX = 10;
+        PlayerY = 29;
+    }
+    else if (area == 6)
+    {
+        PlayerX = 47;
+        PlayerY = 29;
+    }
+    ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
     cursoroff();
 
     while (win == 0)
     {
-        // Destination is the left-most top-most corner
-         Pair dest = make_pair(PlayerY, PlayerX);
-            if (area == 1)
-            {
-                
-                for (int i = 0; i < 2; i++)
-                {
-                    if (zombies[i].waitForNextZombieMove == 0)
-                    {
 
-
-
-                        // Source is the left-most bottom-most corner
-                        zombies[i].src = make_pair(zombies[i].ZombieposY, zombies[i].ZombieposX);
-
-                        if (zombies[i].Zombielives > 0)
-                        {
-                            zombies[i].CloseRangeMovement(starterArea, zombies[i].src, dest, zombies[i].waitForNextZombieMove, win, zombies[i].ZombieXMove, zombies[i].ZombieDeathValue);
-                        }
-
-                    }
-                }
-            }
-            else if (area == 2)
-            {
-                if (zombies[2].waitForNextZombieMove == 0)
-                {
-
-
-
-                    // Source is the left-most bottom-most corner
-                    zombies[2].src = make_pair(zombies[2].ZombieposY, zombies[2].ZombieposX);
-
-                    if (zombies[2].Zombielives > 0)
-                    {
-                        zombies[2].CloseRangeMovement(starterArea, zombies[2].src, dest, zombies[2].waitForNextZombieMove, win, zombies[2].ZombieXMove, zombies[2].ZombieDeathValue);
-                    }
-
-                }
-            }
+        ZombieMoves(zombies, area, -1, win);
+        
         
         
         if (_kbhit()) {
             if (waitForNextMove == 0 && swordAnimationPhase == 0)
             {
                 input = _getch();
-                PlayersMovement(input, abbruch, area, sword, starterArea, lastNumberPressed, swordAnimationPhase, keys, swordCooldown, firstTimeInArea, zombies);
+                PlayersMovement(input, abbruch, area, sword, starterArea, lastNumberPressed, swordAnimationPhase, inventory, swordCooldown, firstTimeInArea, zombies);
                 ECheck(area, starterArea, sword, lastNumberPressed, input);
-                waitForNextMove++;
+                waitForNextMove = 6;
             }
         }
 
-        if (swordAnimationPhase > 0 && waitForSwordAnimation == 0)
-        {
-            //printf("%d", swordAnimationPhase);
-            if ((lastNumberPressed == 1 || lastNumberPressed == 3) && swordAnimationPhase < 6)
-            {
-                for (int i = 0; i < HowManyZombiesExist; i++)
-                {
-                    swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
-                    if (zombies[i].Zombielives <= 0)
-                    {
-                        if ((area == 1 && i < 2) || (area == 2 && i == 2))
-                        {
-                            for (int j = 0; j < zombies[i].ZombieSize; j++)
-                            {
-                                starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
-                            }
-                            gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
-                            printf("\033[0;32m[-X_X]-\033[0m");
-                        }
-                        
-                    }
-                }
-                
-                swordAnimationPhase++;
-                waitForSwordAnimation++;
-            }
-            else if ((lastNumberPressed == 2 || lastNumberPressed == 4) && swordAnimationPhase < 5)
-            {
-                for (int i = 0; i < HowManyZombiesExist; i++)
-                {
-                    swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
-                    if (zombies[i].Zombielives <= 0)
-                    {
-                        
-                        for (int j = 0; j < zombies[i].ZombieSize; j++)
-                        {
-                            starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
-                        }
-                        gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
-                        printf("\033[0;32m[-X_X]-\033[0m");
-                    }
-                }
-                swordAnimationPhase++;
-                waitForSwordAnimation++;
-            }
-            else
-            {
-                swordAnimationPhase = 0;
-                waitForSwordAnimation = 0;
-                swordCooldown = 30;
+        AttackCheck(zombies, swordAnimationPhase, waitForSwordAnimation, swordCooldown, lastNumberPressed, area);
 
-            }
-            
-        }
 
         //AreaOfMap(area, playerX, playerY, starterArea);
         Sleep(1);
@@ -383,14 +159,176 @@ int main()
     Sleep(5000);
 }
 
-void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombie zombies[])
+
+void AttackCheck(Zombie zombies[], int& swordAnimationPhase, int& waitForSwordAnimation, int& swordCooldown, int lastNumberPressed, int area)
 {
-    int NumberForDoor = 1;
+    if (swordAnimationPhase > 0 && waitForSwordAnimation == 0)
+    {
+        //printf("%d", swordAnimationPhase);
+        if ((lastNumberPressed == 1 || lastNumberPressed == 3) && swordAnimationPhase < 6)
+        {
+            for (int i = 0; i < HowManyZombiesExist; i++)
+            {
+                if (area == zombies[i].ZombieArea)
+                {
+                    swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
+                    if (zombies[i].Zombielives <= 0)
+                    {
+                        if ((area == 1 && i < 2) || (area == 2 && i == 2) || ((area == 3 && i >= 3 && i < 5) || (area == 6 && i >= 5 && i < 8)))
+                        {
+                            for (int j = 0; j < zombies[i].ZombieSize; j++)
+                            {
+                                starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
+                            }
+                            gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
+                            printf("\033[0;32m[-X_X]-\033[0m");
+                        }
+
+                    }
+                }
+            }
+
+            swordAnimationPhase++;
+            waitForSwordAnimation++;
+        }
+        else if ((lastNumberPressed == 2 || lastNumberPressed == 4) && swordAnimationPhase < 5)
+        {
+            for (int i = 0; i < HowManyZombiesExist; i++)
+            {
+                if (area == zombies[i].ZombieArea)
+                {
+                    swordAnimations(lastNumberPressed, starterArea, swordAnimationPhase, area, zombies[i]);
+                    if (zombies[i].Zombielives <= 0)
+                    {
+
+                        for (int j = 0; j < zombies[i].ZombieSize; j++)
+                        {
+                            starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
+                        }
+                        gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
+                        printf("\033[0;32m[-X_X]-\033[0m");
+                    }
+                }
+            }
+            swordAnimationPhase++;
+            waitForSwordAnimation++;
+        }
+        else
+        {
+            swordAnimationPhase = 0;
+            waitForSwordAnimation = 0;
+            swordCooldown = 30;
+
+        }
+    }
+}
+void PrintRemover(char starterArea[][COLS], int x, int y)
+{
+    if (starterArea[y][x] == 0)
+    {
+        gotoxy(x, y);
+        printf(" ");
+    }
+}
+
+// rekursion just because I want to
+void ZombieMoves(Zombie zombies[], int area, int i, int& win)
+{
+    if (i >= HowManyZombiesExist)
+        return;
+    if (zombies[i].ZombieArea == area)
+    {
+        // Destination is the left-most top-most corner
+        Pair dest = make_pair(PlayerY, PlayerX);
+
+        if (zombies[i].waitForNextZombieMove == 0)
+        {
+
+
+
+            // Source is the left-most bottom-most corner
+            zombies[i].src = make_pair(zombies[i].ZombieposY, zombies[i].ZombieposX);
+
+            if (zombies[i].Zombielives > 0)
+            {
+                zombies[i].CloseRangeMovement(starterArea, zombies[i].src, dest, zombies[i].waitForNextZombieMove, win, zombies[i].ZombieXMove, zombies[i].ZombieDeathValue);
+            }
+
+        }
+    }
+    
+    ZombieMoves(zombies, area, i + 1, win);
+
+
+}
+
+void TextPrinter(int x, int y, char* text, int time)
+{
+    int i;
+    gotoxy(5, 46);
+    printf("                     ");
+    gotoxy(x, y);
+    printf("%s", text);
+    Sleep(time);
+    for (i = 0; text[i] != NULL; i++)
+    {
+        gotoxy(x + i, y);
+        printf(" ");
+    }
+    FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+}
+
+void BoxMaker(char starterArea[][COLS], int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, int value, char zeichen)
+{
+    int i;
+    char forX = ' ';
+    char forY = ' ';
+
+    if (zeichen == '_')
+    {
+        forX = '_';
+        forY = '|';
+    }
+    else if (zeichen == '#')
+    {
+        forX = '#';
+        forY = '#';
+    }
+
+    for (i = topLeftX; i <= bottomRightX; i++)
+    {
+
+        gotoxy(i, topLeftY);
+        printf("%c", forX);
+        starterArea[topLeftY][i] = value;
+
+        gotoxy(i, bottomRightY);
+        printf("%c", forX);
+        starterArea[bottomRightY][i] = value;
+    }
+
+    for (i = topLeftY + 1; i <= bottomRightY; i++)
+    {
+
+        gotoxy(topLeftX, i);
+        printf("%c", forY);
+        starterArea[i][topLeftX] = value;
+
+        gotoxy(bottomRightX, i);
+        printf("%c", forY);
+        starterArea[i][bottomRightX] = value;
+    }
+}
+
+void ChangeArea(int& area, char starterArea[][COLS], int firstTimeInArea[],int inventory[], Zombie zombies[])
+{
+    int value = 1;
     system("cls");
     gotoxy(PlayerX, PlayerY);
-    printf("[°-°]");
+    printf("[\xC2\xB0-\xC2\xB0]");
     int i = 0;
     int k = 0;
+    int j = 0;
     // set everything to 0
     
     for (k = 0; k < ROWS; k++)
@@ -403,106 +341,20 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
     if (area == 1)
     {
 
-
+        for (i = 0; i < 2; i++)
+        {
+            if (zombies[i].Zombielives <= 0)
+            {
+                for (int j = 0; j < zombies[i].ZombieSize; j++)
+                {
+                    starterArea[zombies[i].ZombieposY][zombies[i].ZombieposX + j] = zombies[i].ZombieDeathValue;
+                }
+                gotoxy(zombies[i].ZombieposX, zombies[i].ZombieposY);
+                printf("\033[0;32m[-X_X]-\033[0m");
+            }
+        }
         //Boarder
-        gotoxy(4, 1);
-        printf("___________________________________________________________________________________________________________________________________");
-        for (i = 0; i < 132; i++)
-        {
-            starterArea[1][4 + i] = 1;
-        }
-        for (i = 2; i < 46; i++) {
-            gotoxy(3, i);
-            printf("|");
-            starterArea[i][3] = 1;
-            gotoxy(135, i);
-            printf("|");
-            starterArea[i][135] = 1;
-        }
-
-        gotoxy(4, 45);
-        printf("___________________________________________________________________________________________________________________________________");
-        for (i = 0; i < 132; i++)
-        {
-            starterArea[45][4 + i] = 1;
-        }
-        /*//Resurchtable
-        gotoxy(26, 28);
-        printf("__________________________");
-
-
-
-        for (int i = 29; i < 42; i++) {
-            gotoxy(25, i);
-            printf("%d", starterArea[i][26]);
-            gotoxy(52, i);
-            printf("|");
-        }
-
-        gotoxy(32, 30);
-        printf("Research Table");
-        gotoxy(26, 31);
-        printf("__________________________");
-        //Laptop
-        gotoxy(37, 32);
-        printf("|\\_      0~");
-        gotoxy(28, 33);
-        printf("Laptop   |  \\______");
-        gotoxy(37, 34);
-        printf("|    |++++|");
-        gotoxy(38, 35);
-        printf("\\_  |++++|");
-        gotoxy(40, 36);
-        printf("\\_|____|");
-        // Sketches
-        gotoxy(42, 37);
-        printf("_______");
-        gotoxy(41, 38);
-        printf("| #§|&| |");
-        gotoxy(28, 39);
-        printf("sketches     | ||§|& |");
-        gotoxy(41, 40);
-        printf("| $|§|| |");
-        gotoxy(41, 41);
-        printf("|_______|");
-
-
-
-        gotoxy(25, 42);
-        printf("|__________________________|");
-
-
-
-
-
-        //Junkttable
-        gotoxy(7, 2);
-        printf("________________________");
-
-        for (int i = 0; i < 9; i++) {
-            gotoxy(6, i + 3);
-            printf("|");
-            gotoxy(31, i + 3);
-            printf("|");
-        }
-
-        gotoxy(12, 4);
-        printf("Junk Table");
-        gotoxy(7, 5);
-        printf("________________________");
-        gotoxy(7, 6);
-        printf("j7m@o * p & g % h#q!w(9)r ^");
-        gotoxy(7, 7);
-        printf("ow(d g#jkdSfjh o%%492f%hs$");
-        gotoxy(7, 8);
-        printf("t@z W x~ y* 1!b ^c#d(3$");
-        gotoxy(7, 9);
-        printf("x1yOu7r4mkp6bRvgn9h0d");
-        gotoxy(7, 10);
-        printf("§f & g!h * D@k ^ l % z$r#q");
-        gotoxy(6, 11);
-        printf("|________________________|");
-        */
+        BoxMaker(starterArea, 4, 1, 136, 45, 1, '_');
 
         gotoxy(13, 4);
         printf("_________________");
@@ -533,7 +385,7 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
         {
             for (i = 0; i < 20; i++)
             {
-                starterArea[4 + k][12 + i] = 2;
+                starterArea[4 + k][11 + i] = 2;
             }
         }
 
@@ -676,34 +528,7 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
         gotoxy(90, 37);
         printf("Some other sht");
 
-        //       _______
-        //      |       |
-        //      |       |
-        //      |_______|
-        // |__  |scanner|                  
-        // |  | |_______|
-        //      |       |
-        //      |       |
-        //      |       |
-        //      |_______|
-
-
-              /*
-              gotoxy(115, 32);
-              printf("_______");
-              gotoxy(114, 33);
-              printf("|Potions|");
-              gotoxy(114, 34);
-              printf("|_______|");
-              gotoxy(114, 35);
-              printf("|  \033[0;32m[ ]\033[0m  |  ");
-              gotoxy(114, 36);
-              printf("|  \033[0;32m[X~~\033[0m |   ");
-              gotoxy(114, 37);
-              printf("|_______|");
-
-              */
-
+              
         setcolor(CONSOLE_BROWN);
         for (int i = 0; i < 18; i++) {
             gotoxy(69 + i, 1);
@@ -714,7 +539,7 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
         setcolor(CONSOLE_WHITE);
 
     }
-    if (area == 2)
+    else if (area == 2)
     {
         if (zombies[2].Zombielives <= 0)
         {
@@ -779,14 +604,14 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
             if (i > 10 && i < 30)
             {
                 setcolor(CONSOLE_BROWN);
-                NumberForDoor = 3;
+                value = 3;
             }
             else
             {
                 setcolor(CONSOLE_WHITE);
-                NumberForDoor = 1;
+                value = 1;
             }
-            starterArea[32][COLS - 40 + i] = NumberForDoor;
+            starterArea[32][COLS - 40 + i] = value;
             gotoxy(COLS - 40 + i, 32);
             printf("_");
             
@@ -862,6 +687,10 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
         // Bodie2:
         gotoxy(150, 10);
         printf("[X-X\033[0;31m]\033[0m");
+        for (i = 0; i < 5; i++)
+        {
+            starterArea[10][150] = 12;
+        }
         if (firstTimeInArea[1] == 1 && zombies[2].Zombielives > 0)
         {
             gotoxy(126, 4);
@@ -884,10 +713,10 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
             firstTimeInArea[1] = 2;
 
             gotoxy(148, 9);
-            printf("\033[0;32m[-ºO°]-\033[0m");
+            printf("\033[0;32m[-\xC2\xB0O\xC2\xB0]-\033[0m");
             Sleep(1000);
             gotoxy(148, 9);
-            printf("\033[0;32m[-º-°]-\033[0m");
+            printf("\033[0;32m[-\xC2\xB0_\xC2\xB0]-\033[0m");
             Sleep(1000);
             zombies[2].ZombieposX = 148;
             zombies[2].ZombieposY = 9;
@@ -902,18 +731,18 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
             gotoxy(130, 5);
             printf("Oh my god Help!!!");
             gotoxy(130, 6);
-            printf("[°o°]");
+            printf("[\xC2\xB0o\xC2\xB0]");
             gotoxy(131, 9);
-            printf("\033[0;32m[-º_°]-\033[0m");
-            
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
+
             Sleep(2000);
 
             gotoxy(130, 5);
             printf("                 ");
             gotoxy(128, 5);
-            printf("[°-°]");
+            printf("[\xC2\xB0-\xC2\xB0]");
             gotoxy(130, 8);
-            printf("\033[0;32m[-º_°]-\033[0m");
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
 
             gotoxy(130, 6);
             printf("     ");
@@ -923,20 +752,20 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
             Sleep(500);
 
             gotoxy(129, 7);
-            printf("\033[0;32m[-º_°]-\033[0m");
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
             gotoxy(130, 8);
             printf("       ");
 
             Sleep(500);
 
             gotoxy(126, 4);
-            printf("[°-°]");
+            printf("[\xC2\xB0-\xC2\xB0]");
             for (i = 0; i < 5; i++)
             {
                 starterArea[4][126 + i] = 11;
             }
             gotoxy(128, 6);
-            printf("\033[0;32m[-º_°]-\033[0m");
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
             gotoxy(128, 5);
             printf("     ");
             gotoxy(129, 7);
@@ -945,24 +774,24 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
             Sleep(500);
 
             gotoxy(127, 5);
-            printf("\033[0;32m[-º_°]-\033[0m");
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
             gotoxy(128, 6);
             printf("       ");
             gotoxy(126, 3);
             printf("Ahhhhhhhh");
             Sleep(1000);
             gotoxy(127, 5);
-            printf("\033[0;32m[-ºO°]-\033[0m");
+            printf("\033[0;32m-[\xC2\xB0O\xC2\xB0-]\033[0m");
             gotoxy(130, 4);
             setcolor(CONSOLE_RED);
             printf("~");
             setcolor(CONSOLE_WHITE);
             Sleep(500);
             gotoxy(127, 5);
-            printf("\033[0;32m[-º-°]\033[0m");
+            printf("\033[0;32m-[\xC2\xB0-\xC2\xB0-]\033[0m");
             Sleep(500);
             gotoxy(127, 5);
-            printf("\033[0;32m[-ºO°]\033[0m");
+            printf("\033[0;32m-[\xC2\xB0O\xC2\xB0-]\033[0m");
             gotoxy(129, 4);
             setcolor(CONSOLE_RED);
             printf("~");
@@ -973,13 +802,13 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
             printf("         ");
             Sleep(500);
             gotoxy(127, 5);
-            printf("\033[0;32m[-º-°]\033[0m");
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
             Sleep(500);
             gotoxy(127, 5);
-            printf("\033[0;32m[-º_°]\033[0m");
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
             Sleep(500);
             gotoxy(126, 6);
-            printf("\033[0;32m[-º_°]\033[0m");
+            printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
             gotoxy(127, 5);
             printf("       ");
             Sleep(100);
@@ -1014,9 +843,757 @@ void ChangeArea(int& area, int starterArea[][COLS], int firstTimeInArea[], Zombi
        
 
     }
-}
+    else if (area == 3)
+    {
+        // äußere box
+        BoxMaker(starterArea, 1, 2, 120, 30, 1, '_');
+    
+        BoxMaker(starterArea, 12, 7, 37, 11, 1, '#');
+        for (k = 0; k < 5; k++)
+        {
+            for (i = 0; i < 26; i++)
+            {
+                // chem bottles
+                if (i < 16 && k < 2) value = 2;
+                // drums
+                else if (i > 16 && k < 2) value = 3;
+                // reagents
+                else if (i < 13 && k > 2) value = 4;
+                // acids
+                else if (i > 13 && k > 2) value = 5;
+                else value = 1;
 
-bool VisionCheck(int starterX, int starterY, int targetX, int targetY, int starterArea[][COLS], int starterArrayValue, int targetArrayValue)
+                starterArea[k + 7][i + 12] = value;
+            }
+        }
+        BoxMaker(starterArea, 49, 7, 71, 11, 1, '#');
+        for (k = 0; k < 5; k++)
+        {
+            for (i = 0; i < 23; i++)
+            {
+                // boxes
+                if (i < 9 && k < 2) value = 6;
+                // Kits
+                else if (i > 9 && i < 16 && k < 2) value = 7;
+                // PPE
+                else if (i > 16 && k > 2) value = 8;
+                // sterile goods
+                else if (k > 2) value = 51;
+                else value = 1;
+                starterArea[k + 7][i + 49] = value;
+            }
+        }
+        BoxMaker(starterArea, 83, 7, 108, 11, 1, '#');
+        for (k = 0; k < 5; k++)
+        {
+            for (i = 0; i < 26; i++)
+            {
+                // screwdrivers
+                if (i < 17 && k < 2) value = 52;
+                // Wires
+                else if (i > 17 && k < 2) value = 53;
+                // spare parts
+                else if (i < 14 && k > 2) value = 54;
+                // bio bags
+                else if (i > 14 && k > 2) value = 55;
+                else value = 1;
+                starterArea[k + 7][i + 83] = value;
+            }
+        }
+        BoxMaker(starterArea, 12, 21, 37, 25, 1, '#');
+        for (k = 0; k < 5; k++)
+        {
+            for (i = 0; i < 26; i++)
+            {
+                // clamps
+                if (i < 13 && k < 2) value = 56;
+                // tubes
+                else if (i > 13 && k < 2) value = 57;
+                // masks
+                else if (i < 12 && k > 2) value = 58;
+                // gloves
+                else if (i > 12 && k > 2) value = 59;
+                else value = 1;
+                starterArea[k + 21][i + 12] = value;
+            }
+        }
+        BoxMaker(starterArea, 49, 21, 74, 25, 1, '#');
+        for (k = 0; k < 5; k++)
+        {
+            for (i = 0; i < 26; i++)
+            {
+                // cold packs
+                if (i < 15 && k < 2) value = 60;
+                // meds
+                else if (i > 15 && k < 2) value = 61;
+                // vials
+                else if (i < 10 && k > 2) value = 62;
+                // syringes
+                else if (i > 10 && k > 2) value = 63;
+                else value = 1;
+                starterArea[k + 21][i + 49] = value;
+            }
+        }
+        BoxMaker(starterArea, 86, 21, 109, 25, 1, '#');
+        for (k = 0; k < 5; k++)
+        {
+            for (i = 0; i < 24; i++)
+            {
+                // sample jar
+                if (k < 2) value = 64;
+                // cleaning fluids
+                else if (k > 2) value = 65;
+                else value = 1;
+                starterArea[k + 21][i + 86] = value;
+            }
+        }
+        i < 10 ? i : -1;
+
+        //box 1:
+        gotoxy(13, 8);
+        printf("  chem bottles | drums  ");
+        gotoxy(13, 9);
+        printf("------------------------");
+        gotoxy(13, 10);
+        printf("   reagents | acids     ");
+
+        // box 2:
+        gotoxy(50, 8);
+        printf("  boxes | kits | PPE ");
+        gotoxy(50, 9);
+        printf("---------------------");
+        gotoxy(50, 10);
+        printf("   sterile goods     ");
+
+        // box 3:
+        gotoxy(84, 8);
+        printf("  screwdrivers  | wires ");
+        gotoxy(84, 9);
+        printf("------------------------");
+        gotoxy(84, 10);
+        printf(" spare parts | bio bags ");
+
+        // box 4:
+        gotoxy(13, 22);
+        printf("   clamps   |   tubes   ");
+        gotoxy(13, 23);
+        printf("------------------------");
+        gotoxy(13, 24);
+        printf("   masks   |   gloves   ");
+
+        // box 5:
+        gotoxy(50, 22);
+        printf("   cold packs |  meds   ");
+        gotoxy(50, 23);
+        printf("------------------------");
+        gotoxy(50, 24);
+        printf("  vials  |   syringes   ");
+
+        // box 6:
+        gotoxy(87, 22);
+        printf("      sample jars     ");
+        gotoxy(87, 23);
+        printf("----------------------");
+        gotoxy(87, 24);
+        printf("   cleaning fluids    ");
+
+
+        //door to the mashine room
+        for (i = 0; i < 10; i++)
+        {
+            gotoxy(52 + i, 2);
+            printf(" ");
+            starterArea[2][52 + i] = 66;
+        }
+
+        // door to the hallway
+        for (i = 0; i < 5; i++)
+        {
+            gotoxy(120,14 + i);
+            printf(" ");
+            starterArea[14 + i][120] = 68;
+        }
+
+        // breakable pipe
+        for (i = 0; i < 23; i++)
+        {
+            
+            gotoxy(2 + i, 30);
+            printf("\033[33m=\033[0m");
+            starterArea[30][2 + i] = 69;
+        }
+    }
+    else if (area == 4)
+    {
+        // Äußere box
+        BoxMaker(starterArea, 12, 2, 102, 30, 1, '_');
+
+        // boiler  2  // Volvo 7
+        gotoxy(24, 5);
+        printf("  ________        ________  ");
+        for (i = 0; i < 8; i++)
+        {
+            starterArea[5][26 + i] = 7;
+            starterArea[5][42 + i] = 2;
+        }
+        gotoxy(24, 6);
+        printf(" |        |      |        | ");
+        for (i = 0; i < 10; i++)
+        {
+            starterArea[6][25 + i] = 7;
+            starterArea[6][41 + i] = 2;
+        }
+        gotoxy(24, 7);
+        printf(" |  VALVE |======| GAUGE  | ");
+        for (i = 0; i < 26; i++)
+        {
+            if(i < 13)
+            starterArea[7][25 + i] = 7;
+            else
+            starterArea[7][25 + i] = 2;
+        }
+        gotoxy(24, 8);
+        printf(" |________|      |________| ");
+        for (i = 0; i < 10; i++)
+        {
+            starterArea[8][25 + i] = 7;
+            starterArea[8][41 + i] = 2;
+        }
+        gotoxy(24, 9);
+        printf("    |||||  BOILER   |||||   ");
+        for (i = 0; i < 21; i++)
+        {
+            starterArea[9][28 + i] = 2;
+        }
+        gotoxy(24, 10);
+        printf("____|||||___________|||||____");
+        for (i = 0; i < 29; i++)
+        {
+            starterArea[10][24 + i] = 2;
+        }
+        gotoxy(24, 11);
+        printf("|         HEAT CORE         |");
+        for (i = 0; i < 29; i++)
+        {
+            starterArea[11][24 + i] = 2;
+        }
+        gotoxy(24, 12);
+        printf("|___________________________|");
+        for (i = 0; i < 29; i++)
+        {
+            starterArea[12][24 + i] = 2;
+        }
+
+
+        // Emergency Generator 3
+        gotoxy(65, 5);
+        printf("_____________________________");
+        gotoxy(64, 6);
+        printf("|     EMERGENCY GENERATOR     |");
+        gotoxy(64, 7);
+        printf("|  _________      ________    |");
+        gotoxy(64, 8);
+        printf("|  |        |====| START  |   |");
+        if (inventory[9] == 0)
+        {
+            gotoxy(64, 9);
+            printf("|  | ENGINE |    | PANEL \033[5;31mo\033[0m|   |");
+        }
+        else
+        {
+            gotoxy(64, 9);
+            printf("|  | ENGINE |    | PANEL \033[5;32mo\033[0m|   |");
+        }
+        gotoxy(64, 10);
+        printf("|  |  ||||  |    |________|   |");
+        gotoxy(64, 11);
+        printf("|  |  ||||  |        ||       |");
+        gotoxy(64, 12);
+        printf("|__|________|________||_______|");
+        for (k = 0; k < 8; k++)
+        {
+            for (i = 0; i < 31; i++)
+            {
+                starterArea[5 + k][64 + i] = 3;
+            }
+        }
+        starterArea[5][64] = 0;
+        starterArea[5][94] = 0;
+
+
+
+        // Serverbox1 4
+        gotoxy(20,19);
+        printf("______________________");
+        gotoxy(19, 20);
+        printf("/_____________________/|");
+        gotoxy(18, 21);
+        printf("|  [ UPS ]   ||||||   | |");
+        gotoxy(18, 22);
+        printf("|============||||||===| |");
+        gotoxy(18, 23);
+        printf("|  [ SBS ]   ||||||   | |");
+        gotoxy(18, 24);
+        printf("|============||||||===| |");
+        gotoxy(18, 25);
+        printf("|  [ CTRL ]  ||||||   | |");
+        gotoxy(18, 26);
+        printf("|============||||||===| |");
+        gotoxy(18, 27);
+        printf("|  [ NET ]   ||||||   | /");
+        gotoxy(18, 28);
+        printf("|_____________________|/");
+
+        // Serverbox2 5
+        gotoxy(74, 19);
+        printf("______________________");
+        gotoxy(73, 20);
+        printf("/_____________________/|");
+        gotoxy(72, 21);
+        printf("|  [ UPS ]   ||||||   | |");
+        gotoxy(72, 22);
+        printf("|============||||||===| |");
+        gotoxy(72, 23);
+        printf("|  [ BACK ]  ||||||   | |");
+        gotoxy(72, 24);
+        printf("|============||||||===| |");
+        gotoxy(72, 25);
+        printf("|  [ HDD ]   [][][]   | |");
+        gotoxy(72, 26);
+        printf("|============||||||===| |");
+        gotoxy(72, 27);
+        printf("|  [ NET ]   ||||||   | /");
+        gotoxy(72, 28);
+        printf("|_____________________|/");
+
+        for (k = 0; k < 10; k++)
+        {
+            for (i = 0; i < 25; i++)
+            {
+                starterArea[19 + k][18 + i] = 4;
+                starterArea[19 + k][72 + i] = 5;
+            }
+        }
+        starterArea[19][18] = 0;
+        starterArea[19][19] = 0;
+        starterArea[19][42] = 0;
+        starterArea[20][18] = 0;
+        starterArea[28][42] = 0;
+
+        starterArea[19][72] = 0;
+        starterArea[19][73] = 0;
+        starterArea[19][96] = 0;
+        starterArea[20][72] = 0;
+        starterArea[28][96] = 0;
+
+
+
+        
+        //door to the lagerraum 6
+        gotoxy(52, 30);
+        printf("          ");
+
+        for (i = 0; i < 10; i++)
+        {
+            starterArea[30][52 + i] = 6;
+        }
+
+
+
+
+
+
+    }
+    else if (area == 5)
+    {
+        // outer box
+        BoxMaker(starterArea, 5, 2, 70, 30, 1, '_');
+
+        // Box bottom left
+        BoxMaker(starterArea, 5, 17, 21, 30, 1, '_');
+
+        // fix one broken character
+        gotoxy(5,17);
+        printf("|");
+
+        // door for mens and womans room
+        setcolor(CONSOLE_BROWN);
+        for (i = 0; i < 5; i++)
+        {
+            // woman 2 
+            gotoxy(5, 20 + i);
+            printf("|");
+            starterArea[20 + i][5] = 2;
+            // men 3 
+            gotoxy(21, 20 + i);
+            printf(" ");
+            starterArea[20 + i][21] = 0;
+        }
+
+        // door to the hallway 3
+        for (i = 0; i < 9; i++)
+        {
+            gotoxy(9 + i, 30);
+            printf(" ");
+            starterArea[30][9 + i] = 3;
+        }
+
+        setcolor(CONSOLE_WHITE);
+
+        // shower 4
+        for (i = 0; i < 3; i++)
+        {
+            gotoxy(6, 2 + (5 * i));
+            printf("_______________");
+            for (k = 0; k < 15; k++)
+            {
+                starterArea[2 + (5 * i)][6 + k] = 1;
+            }
+            gotoxy(10, 3 + (5 * i));
+            printf("shower");
+            for(k = 0; k < 6; k++)
+            {
+                starterArea[3 + (5 * i)][10 + k] = 4;
+            }
+            gotoxy(7, 4 + (5 * i));
+            printf("/'");
+            starterArea[4 + (5 * i)][7] = 4;
+            starterArea[4 + (5 * i)][8] = 4;
+            gotoxy(6, 5 + (5 * i));
+            printf("o ''");
+            starterArea[5 + (5 * i)][7] = 4;
+            starterArea[5 + (5 * i)][8] = 4;
+            starterArea[5 + (5 * i)][9] = 4;
+            gotoxy(8, 6 + (5 * i));
+            printf("'~'");
+            starterArea[6 + (5 * i)][8] = 4;
+            starterArea[6 + (5 * i)][9] = 4;
+            starterArea[6 + (5 * i)][10] = 4;
+        }
+
+
+        // stalls 5
+        
+        gotoxy(37, 3);
+        printf("| /_____/  | /_____/  | /_____/");
+        gotoxy(37, 4);
+        printf("| |  O  |  | |  O  |  | |  O  |");
+        gotoxy(37, 5);
+        printf("| |     |  | |     |  | |     |");
+        gotoxy(37, 6);
+        printf("|  \\___/   |  \\___/   |  \\___/");
+        gotoxy(37, 7);
+        printf("|__________|__________|");
+
+        for (i = 0; i < 4; i++)
+        {
+            for (k = 0; k < 31; k++)
+                starterArea[3 + i][37 + k] = 5;
+        }
+
+        // small fixes
+        for (i = 0; i < 23; i++)
+            starterArea[7][37 + i] = 5;
+
+        starterArea[6][67] = 0;
+
+        gotoxy(60, 8);
+        printf("\\");
+        starterArea[8][60] = 1;
+        gotoxy(61, 9);
+        printf("|");
+        starterArea[9][61] = 1;
+        gotoxy(61, 10);
+        printf("|");
+        starterArea[10][61] = 1;
+
+
+        // pissuars 6
+        for (i = 0; i < 2; i++)
+        {
+            gotoxy(65, 13 + (4 * i));
+            printf("-----");
+            for (k = 0; k < 5; k++)
+            {
+                starterArea[13 + (4 * i)][65 + k] = 1;
+            }
+            gotoxy(67, 14 + (4 * i));
+            printf("/¯¯");
+            starterArea[14 + (4 * i)][67] = 6;
+            starterArea[14 + (4 * i)][68] = 6;
+            starterArea[14 + (4 * i)][69] = 6;
+
+            gotoxy(67, 15 + (4 * i));
+            printf("| O");
+            starterArea[15 + (4 * i)][67] = 6;
+            starterArea[15 + (4 * i)][68] = 6;
+            starterArea[15 + (4 * i)][69] = 6;
+
+            gotoxy(67, 16 + (4 * i));
+            printf("\\__");
+            starterArea[16 + (4 * i)][67] = 6;
+            starterArea[16 + (4 * i)][68] = 6;
+            starterArea[16 + (4 * i)][69] = 6;
+
+            gotoxy(65, 17 + (4 * i));
+            printf("-----");
+            for (k = 0; k < 5; k++)
+            {
+                starterArea[17 + (4 * i)][65 + k] = 1;
+            }
+        }
+
+        // sink 7
+        gotoxy(35, 27);
+        printf("_______________________");
+        gotoxy(34, 28);
+        printf("|  ___     ___     ___  |");
+        gotoxy(34, 29);
+        printf("| |___|   |___|   |___| |");
+        gotoxy(34, 30);
+        printf("|___|_______|_______|___|");
+
+        for (i = 0; i < 3; i++)
+        {
+            for (k = 0; k < 25; k++)
+                starterArea[27 + i][34 + k] = 7;
+        }
+
+        // small fixes
+        starterArea[27][34] = 0;
+        starterArea[27][58] = 0;
+    }
+    else if (area == 6)
+    {
+        // outer box
+        BoxMaker(starterArea, 5, 2, 95, 30, 1, '_');
+
+        //locker (empty 2)
+        for (i = 0; i < 2; i++)
+        {
+            for (k = 0; k < 2; k++)
+            {
+                for (j = 0; j < 5; j++)
+                {
+                    gotoxy(i * 45 + k * 37 + 5, j * 3 + 6);
+                    printf("|¯¯¯¯¯¯|");
+                    gotoxy(i * 45 + k * 37 + 5, j * 3 + 6 + 1);
+                    printf("|      |");
+                    gotoxy(i * 45 + k * 37 + 5, j * 3 + 6 + 2);
+                    printf("|      |");
+                    for (int m = 0; m < 3; m++)
+                        for (int n = 0; n < 8; n++)
+                            starterArea[j * 3 + 6 + m][i * 45 + k * 37 + 5 + n] = 2;
+                    gotoxy(i * 45 + k * 37 + 10 - ((k % 2) * 3), j * 3 + 6 + 2);
+                    printf("o");
+                }
+                gotoxy(i * 45 + k * 37 + 6, (j - 1) * 3 + 6 + 3);
+                printf("¯¯¯¯¯¯");
+                for (int n = 0; n < 6; n++)
+                    starterArea[(j - 1) * 3 + 6 + 3][i * 45 + k * 37 + 6 + n] = 2;
+            }
+        }
+
+
+        //benches 3
+        for (i = 0; i < 2; i++)
+        {
+            for (j = 0; j < 14; j++)
+            {
+                gotoxy(i * 45 + 23, j + 7);
+                printf("|   |   |");
+                for (int m = 0; m < 9; m++)
+                    starterArea[j + 7][i * 45 + 23 + m] = 3;
+            }
+            gotoxy(i * 45 + 23, 6);
+            printf("|¯¯¯¯¯¯¯|");
+            for (int m = 0; m < 9; m++)
+                starterArea[6][i * 45 + 23 + m] = 3;
+            gotoxy(i * 45 + 24, j + 7);
+            printf("¯¯¯¯¯¯¯");
+            for (int m = 0; m < 7; m++)
+                starterArea[j + 7][i * 45 + 24 + m] = 3;
+        }
+
+
+        //keyholder 4
+        setcolor(CONSOLE_BROWN);
+        gotoxy(32, 30);
+        printf("|¯¯|");
+        setcolor(CONSOLE_WHITE);
+        for (i = 0; i < 4; i++)
+            starterArea[30][32 + i] = 4;
+        
+
+        // sink 5
+        gotoxy(90, 27);
+        printf("|¯¯¯¯");
+        gotoxy(90, 28);
+        printf("|  o ");
+        gotoxy(90, 29);
+        printf("|____");
+        for (i = 0; i < 3; i++)
+            for (j = 0; j < 5; j++)
+                starterArea[i + 27][j + 90] = 5;
+
+        // bin 6
+        gotoxy(91, 24);
+        printf("__");
+        starterArea[24][91] = 6;
+        starterArea[24][92] = 6;
+        gotoxy(90, 25);
+        printf("|  |");
+        for (i = 0; i < 4; i++)
+            starterArea[25][90 + i] = 6;
+        gotoxy(91, 26);
+        printf("¯¯");
+        starterArea[26][91] = 6;
+        starterArea[26][92] = 6;
+
+        // door 7
+        setcolor(CONSOLE_BROWN);
+        gotoxy(44, 30);
+        printf("__________");
+        for (i = 0; i < 10; i++)
+            starterArea[30][44 + i] = 7;
+        setcolor(CONSOLE_WHITE);
+
+
+
+
+        // bottom body 8
+        gotoxy(24,27);
+        printf("\033[0;31m~\033[0m");
+        starterArea[27][24] = 8;
+        gotoxy(23, 28);
+        printf("\033[0;31m~~\033[0m");
+        starterArea[28][23] = 8;
+        starterArea[28][24] = 8;
+        gotoxy(21, 29);
+        printf("[xO\033[0;31mx]\033[0m");
+        for (i = 0; i < 5; i++)
+            starterArea[29][21 + i] = 8;
+
+
+        // top body 21
+        gotoxy(51, 5);
+        printf("[\033[0;31mQ\033[0m-Q\033[0;31m~~\033[0m");
+        for (i = 0; i < 6; i++)
+            starterArea[5][51 + i] = 21;
+
+        // special locker 22
+        setcolor(CONSOLE_BROWN);
+        gotoxy(50, 6);
+        printf("|¯¯¯¯¯¯|");
+        gotoxy(50, 7);
+        printf("|      |");
+        gotoxy(50, 8);
+        printf("|    o |");
+        gotoxy(51, 9);
+        printf("¯¯¯¯¯¯");
+        setcolor(CONSOLE_WHITE);
+        for (int m = 0; m < 4; m++)
+            for (int n = 0; n < 8; n++)
+                starterArea[6 + m][50 + n] = 22;
+        
+        
+        // secret locker 23
+        for (int m = 0; m < 4; m++)
+            for (int n = 0; n < 8; n++)
+                starterArea[15 + m][5 + n] = 23;
+
+
+        // special 
+        
+        // left locker
+        gotoxy(12,15);
+        printf("\033[0;31m|\033[0m");
+        gotoxy(12, 16);
+        printf("\033[0;31m|\033[0m");
+
+        // left bench
+        gotoxy(29, 13);
+        printf("\033[2;31;101m\033[7;31m  \033[0m\033[0;31m|~~\033[0m");
+        starterArea[13][32] = 1;
+        starterArea[13][33] = 1;
+        gotoxy(29, 14);
+        printf("\033[2;31;101m\033[7;31m  \033[0m\033[0;31m|~\033[0m");
+        starterArea[14][32] = 1;
+        gotoxy(30, 15);
+        printf("\033[2;31;101m\033[7;31m \033[0m");
+        gotoxy(31, 16);
+        printf("\033[0;31m|\033[0m");
+
+
+        // 2cond locker row
+        gotoxy(42, 19);
+        printf("\033[0;31m|\033[0m");
+        gotoxy(41, 20);
+        printf("\033[0;31m~|\033[0m\033[2;31;101m\033[7;31m \033[0m");
+        starterArea[20][41] = 1;
+        gotoxy(42, 21);
+        printf("\033[0;31m~\033[0m¯\033[0;31m¯¯¯\033[0m");
+        starterArea[21][42] = 1;
+
+        // upper 3d locker row
+        gotoxy(52, 6);
+        printf("\033[0;31m¯¯¯\033[0m");
+        gotoxy(57, 10);
+        printf("\033[0;31m|\033[0m");
+        gotoxy(57, 11);
+        printf("\033[0;31m|~\033[0m");
+        starterArea[11][58] = 1;
+
+
+        // 2cond bench
+        gotoxy(68, 17);
+        printf("\033[2;31m|\033[7;31m   \033[0m");
+        gotoxy(68, 18);
+        printf("\033[2;31m| \033[7;31m \033[0m");
+        gotoxy(69, 19);
+        printf("\033[2;31m\033[7;31m  \033[0m");
+    }
+    
+}  
+            
+//____________________________________________________________________________________________________________
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                    |¯¯¯¯¯¯¯¯|              |¯¯¯¯¯¯¯¯|                                     |
+//|                                    |        |              |        |                                     |
+//|                                    |        |______________|        |                                     |
+//|                                    |                                |                                     |
+//|                                    |                                |                                     |
+//|                                    |________________________________|                                     |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                       [Xo~                |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//|                                                                                                           |
+//| |¯¯¯¯¯¯¯¯¯¯|                                                                                              |
+//| |          |                                                                                              |
+//| |          |       [x-\                                                                                   |
+//| |          |                                                                                              |
+//| |          |                                                                                              |
+//| |          |                                                                                              |
+//| |          ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯|                                                                      |
+//| |                                  |                                                                      |
+//| |                                  |                                                                      |
+//| |__________________________________|                                                                      |
+//|____________________________________________                   ____________________________________________|
+
+
+bool VisionCheck(int starterX, int starterY, int targetX, int targetY, char starterArea[][COLS], int starterArrayValue, int targetArrayValue)
 {
     int x = starterX; 
     int y = starterY;
@@ -1093,50 +1670,68 @@ void HitCheck(int SwordX, int SwordY, int area, Zombie& zombie, int howFar, int 
         
     }
 
-void swordAnimations(int lastNumberPressed, int starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie)
+void swordAnimations(int lastNumberPressed, char starterArea[][COLS], int swordAnimationPhase, int area, Zombie& zombie, bool swordCancel)
     {
         if (lastNumberPressed == 1)
         {
-            if ((starterArea[PlayerY - 1][PlayerX + 2] == 0) && (starterArea[PlayerY - 1][PlayerX + 3] == 0) && (starterArea[PlayerY - 1][PlayerX + 4] == 0) && (starterArea[PlayerY - 1][PlayerX + 5] == 0))
+            if (swordAnimationPhase == 1)
             {
-                if (swordAnimationPhase == 1)
+                // Zombie hat nur beim tot ne zahl davor nur einen bereich
+                if (starterArea[PlayerY - 1][PlayerX + 5] == 0)
                 {
-                    gotoxy(PlayerX + 3, PlayerY - 1);
+                    gotoxy(PlayerX + 5, PlayerY - 1);
                     printf("  /");
                     HitCheck(PlayerX + 5, PlayerY - 1, area, zombie, 1, lastNumberPressed);
                 }
-                //Sleep(100);
-                if (swordAnimationPhase == 2)
+                else
+                    swordCancel = true;
+            }
+            else if (swordAnimationPhase == 2 && !swordCancel)
+            {
+                if (starterArea[PlayerY - 1][PlayerX + 4] == 0)
                 {
                     gotoxy(PlayerX + 3, PlayerY - 1);
                     printf(" / ");
                     HitCheck(PlayerX + 4, PlayerY - 1, area, zombie, 1, lastNumberPressed);
                 }
-                //Sleep(50);
-                if (swordAnimationPhase == 3)
+                else
+                    swordCancel = true;
+            }
+            else if (swordAnimationPhase == 3 && !swordCancel)
+            {
+                if (starterArea[PlayerY - 1][PlayerX + 3] == 0)
                 {
                     gotoxy(PlayerX + 3, PlayerY - 1);
                     printf("| ");
                     HitCheck(PlayerX + 3, PlayerY - 1, area, zombie, 1, lastNumberPressed);
                 }
-                //Sleep(50);
-                if (swordAnimationPhase == 4)
+                else
+                    swordCancel = true;
+            }
+            else if (swordAnimationPhase == 4 && !swordCancel)
+            {
+                if (starterArea[PlayerY - 1][PlayerX + 2] == 0)
                 {
                     gotoxy(PlayerX + 2, PlayerY - 1);
                     printf("\\ ");
                     HitCheck(PlayerX + 2, PlayerY - 1, area, zombie, 1, lastNumberPressed);
-
                 }
-                //Sleep(100);
-                if (swordAnimationPhase == 5)
-                {
-                    gotoxy(PlayerX + 2, PlayerY - 1);
-                    printf(" ");
-                    gotoxy(PlayerX + 3, PlayerY - 1);
-                    printf("| ");
-                }
+                else
+                    swordCancel = true;
             }
-
+            else if (swordAnimationPhase == 5)
+            {
+                if (starterArea[PlayerY - 1][PlayerX + 5] == 0)
+                {
+                    PrintRemover(starterArea, PlayerX + 2, PlayerY - 1);
+                    PrintRemover(starterArea, PlayerX + 3, PlayerY - 1);
+                    PrintRemover(starterArea, PlayerX + 4, PlayerY - 1);
+                    PrintRemover(starterArea, PlayerX + 5, PlayerY - 1);
+                    gotoxy(PlayerX + 3, PlayerY - 1);
+                    printf("|");
+                }
+             
+            }
         }
         else if (lastNumberPressed == 2)
         {
@@ -1270,691 +1865,6 @@ void swordAnimations(int lastNumberPressed, int starterArea[][COLS], int swordAn
 
     }    
 
-void Zombie::CloseRangeMovement(int starterArea[][COLS], Pair src, Pair dest, int& waitForNextZombieMove, int& win, bool& ZombieXMove, int ZombieDeathValue)
-    {
-    int randomNumber;
-
-
-
-        this->ZombieposY;
-        this->ZombieposX;
-
-        bool hittingWall = false;
-        
-        
-        
-        
-
-        //check if the Zombie hasnt got vision
-        if (VisionCheck(ZombieposX, ZombieposY, PlayerX, PlayerY, starterArea, ZombieDeathValue, 9))
-        {
-            randomNumber = rand() % 4;
-            
-            if (randomNumber == 0)
-            {
-                for (int i = 0; i < ZombieSize; i++)
-                {
-                    if (starterArea[ZombieposY - 1][ZombieposX + i] == 0 || starterArea[ZombieposY - 1][ZombieposX + i] == 9)
-                    {
-                        
-                    }
-                    else
-                    {
-                        hittingWall = true;
-                        break;
-                    }
-                }
-                if (!hittingWall)
-                {
-                    ZombieposY--;
-                    gotoxy(ZombieposX, ZombieposY + 1);
-                    printf("       ");
-
-                }
-            }
-            else if (randomNumber == 1)
-            {
-                for (int i = 0; i < ZombieSize; i++)
-                {
-                    if (starterArea[ZombieposY][ZombieposX - 1 + i] == 0 || starterArea[ZombieposY][ZombieposX - 1 + i] == 9)
-                    {
-                       
-                    }
-                    else
-                    {
-                        hittingWall = true;
-                        break;
-                    }
-                }
-                if (!hittingWall)
-                {
-                    ZombieposX--;
-                    gotoxy(ZombieposX + 7, ZombieposY);
-                    printf(" ");
-                }
-            }
-            else if (randomNumber == 2)
-            {
-                for (int i = 0; i < ZombieSize; i++)
-                {
-                    if (starterArea[ZombieposY + 1][ZombieposX + i] == 0 || starterArea[ZombieposY + 1][ZombieposX + i] == 9)
-                    {
-                        
-                    }
-                    else
-                    {
-                        hittingWall = true;
-                        break;
-                    }
-                }
-                if (!hittingWall)
-                {
-                    ZombieposY++;
-                    gotoxy(ZombieposX, ZombieposY - 1);
-                    printf("       ");
-                }
-            }
-            else
-            {
-                for (int i = 0; i < ZombieSize; i++)
-                {
-                    if (starterArea[ZombieposY][ZombieposX + i + 1] == 0 || starterArea[ZombieposY][ZombieposX + i + 1] == 9)
-                    {
-                        
-                    }
-                    else
-                    {
-                        hittingWall = true;
-                        break;
-                    }
-                }
-                if (!hittingWall)
-                {
-                    ZombieposX++;
-                    gotoxy(ZombieposX - 1, ZombieposY);
-                    printf(" ");
-                }
-            }
-            gotoxy(ZombieposX, ZombieposY);
-            printf("\033[0;32m[-º_°]-\033[0m");
-
-            Zombiespeed = ZombieStartSpeed * 4;
-            waitForNextZombieMove++;
-            return;
-        }
-
-        Zombiespeed = ZombieStartSpeed;
-        // If the source is out of range
-        if (!isValid(src.first, src.second)) {
-            printf("Source is invalid\n");
-            return;
-        }
-
-        // If the destination is out of range
-        if (isValid(dest.first, dest.second) == false) {
-            printf("Destination is invalid\n");
-            return;
-        }
-
-        // Either the source or the destination is blocked so the point of dest and src is a blocking unit
-        if (isUnBlocked(starterArea, src.first, src.second, src, 0, 0) == false || isUnBlocked(starterArea, dest.first, dest.second, src, 0, 0) == false) {
-            //printf("Source or the destination is blocked\n");
-            if (isUnBlocked(starterArea, src.first, src.second, src, 0, 0) == false || isUnBlocked(starterArea, dest.first, dest.second - 1, src, -1, 0) == false)
-            {
-                //printf("Source or the destination is blocked\n");
-                return;
-            }
-        }
-
-        // If the destination cell is the same as source cell
-        
-        for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-        {
-            for (int g = 0; g <= PlayerSize; g++)
-            {
-                if (isDestination(src.first, src.second + c, dest.first, dest.second + g))
-                {
-                    win = 2;
-                    return;
-                }
-            }
-        }
-
-        // Create a closed list and initialise it to false which
-        // means that no cell has been included yet This closed
-        // list is implemented as a boolean 2D array
-        bool closedList[ROWS][COLS];
-        memset(closedList, false, sizeof(closedList));
-
-        // Declare a 2D array of structure to hold the details
-        // of that cell
-        cell cellDetails[ROWS][COLS];
-
-        int i, j;
-
-        for (i = 0; i < ROWS; i++) {
-            for (j = 0; j < COLS; j++) {
-                cellDetails[i][j].f = FLT_MAX;
-                cellDetails[i][j].g = FLT_MAX;
-                cellDetails[i][j].h = FLT_MAX;
-                cellDetails[i][j].parent_i = -1;
-                cellDetails[i][j].parent_j = -1;
-            }
-        }
-
-        // Initialising the parameters of the starting node
-        i = src.first, j = src.second;
-        cellDetails[i][j].f = 0.0;
-        cellDetails[i][j].g = 0.0;
-        cellDetails[i][j].h = 0.0;
-        cellDetails[i][j].parent_i = i;
-        cellDetails[i][j].parent_j = j;
-
-        /*
-         Create an open list having information as-
-         <f, <i, j>>
-         where f = g + h,
-         and i, j are the row and column index of that cell
-         Note that 0 <= i <= ROW-1 & 0 <= j <= COL-1
-         This open list is implemented as a set of pair of
-         pair.*/
-        set<pPair> openList;
-
-        // Put the starting cell on the open list and set its
-        // 'f' as 0
-        openList.insert(make_pair(0.0, make_pair(i, j)));
-
-        // We set this boolean value as false as initially
-        // the destination is not reached.
-        bool foundDest = false;
-
-        while (!openList.empty()) {
-            pPair p = *openList.begin();
-            // Remove this vertex from the open list
-            openList.erase(openList.begin());
-
-            // Add this vertex to the closed list
-            i = p.second.first;
-            j = p.second.second;
-            closedList[i][j] = true;
-
-            /*
-             Generating all the 8 successor of this cell
-
-                 N.W   N   N.E
-                   \   |   /
-                    \  |  /
-                 W----Cell----E
-                      / | \
-                    /   |  \
-                 S.W    S   S.E
-
-             Cell-->Popped Cell (i, j)
-             N -->  North       (i-1, j)
-             S -->  South       (i+1, j)
-             E -->  East        (i, j+1)
-             W -->  West           (i, j-1)
-             N.E--> North-East  (i-1, j+1)
-             N.W--> North-West  (i-1, j-1)
-             S.E--> South-East  (i+1, j+1)
-             S.W--> South-West  (i+1, j-1)*/
-
-             // To store the 'g', 'h' and 'f' of the 8 successors
-            double gNew, hNew, fNew;
-
-            //----------- 1st Successor (North) ------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i - 1, j)) {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i - 1, j + c, dest.first, dest.second + g)) {
-                            // Set the Parent of the destination cell
-                            //printf("f");
-                            cellDetails[i - 1][j + c].parent_i = i;
-                            cellDetails[i - 1][j + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i - 1][j] && isUnBlocked(starterArea, i - 1, j, src, 0, -1)) {
-                    gNew = cellDetails[i][j].g + 1.0;
-                    hNew = calculateHValue(i - 1, j, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i - 1][j].f == FLT_MAX
-                        || cellDetails[i - 1][j].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i - 1, j)));
-
-                        // Update the details of this cell
-                        cellDetails[i - 1][j].f = fNew;
-                        cellDetails[i - 1][j].g = gNew;
-                        cellDetails[i - 1][j].h = hNew;
-                        cellDetails[i - 1][j].parent_i = i;
-                        cellDetails[i - 1][j].parent_j = j;
-                    }
-                }
-            }
-
-            //----------- 2nd Successor (South) ------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i + 1, j)) {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i + 1, j + c, dest.first, dest.second + g)) {
-                            //printf("d");
-                            // Set the Parent of the destination cell
-                            cellDetails[i + 1][j + c].parent_i = i;
-                            cellDetails[i + 1][j + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i + 1][j] && isUnBlocked(starterArea, i + 1, j, src, 0, 1))
-                {
-                    gNew = cellDetails[i][j].g + 1.0;
-                    hNew = calculateHValue(i + 1, j, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i + 1][j].f == FLT_MAX
-                        || cellDetails[i + 1][j].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i + 1, j)));
-                        // Update the details of this cell
-                        cellDetails[i + 1][j].f = fNew;
-                        cellDetails[i + 1][j].g = gNew;
-                        cellDetails[i + 1][j].h = hNew;
-                        cellDetails[i + 1][j].parent_i = i;
-                        cellDetails[i + 1][j].parent_j = j;
-                    }
-                }
-            }
-
-            //----------- 3rd Successor (East) ------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i, j + 1)) {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i, j + 1 + c, dest.first, dest.second + g)) {
-                            // Set the Parent of the destination cell
-                            //printf("s");
-                            cellDetails[i][j + 1 + c].parent_i = i;
-                            cellDetails[i][j + 1 + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i][j + 1] && isUnBlocked(starterArea, i, j + 1, src, 1, 0))
-                {
-                    gNew = cellDetails[i][j].g + 1.0;
-                    hNew = calculateHValue(i, j + 1, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i][j + 1].f == FLT_MAX
-                        || cellDetails[i][j + 1].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i, j + 1)));
-
-                        // Update the details of this cell
-                        cellDetails[i][j + 1].f = fNew;
-                        cellDetails[i][j + 1].g = gNew;
-                        cellDetails[i][j + 1].h = hNew;
-                        cellDetails[i][j + 1].parent_i = i;
-                        cellDetails[i][j + 1].parent_j = j;
-                    }
-                }
-            }
-
-            //----------- 4th Successor (West) ------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i, j - 1)) {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i, j - 1 + c, dest.first, dest.second + g)) {
-                            // Set the Parent of the destination cell
-                            //printf("a");
-                            cellDetails[i][j - 1 + c].parent_i = i;
-                            cellDetails[i][j - 1 + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i][j - 1] && isUnBlocked(starterArea, i, j - 1, src, -1, 0))
-                {
-                    gNew = cellDetails[i][j].g + 1.0;
-                    hNew = calculateHValue(i, j - 1, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i][j - 1].f == FLT_MAX
-                        || cellDetails[i][j - 1].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i, j - 1)));
-
-                        // Update the details of this cell
-                        cellDetails[i][j - 1].f = fNew;
-                        cellDetails[i][j - 1].g = gNew;
-                        cellDetails[i][j - 1].h = hNew;
-                        cellDetails[i][j - 1].parent_i = i;
-                        cellDetails[i][j - 1].parent_j = j;
-                    }
-                }
-            }
-
-            //----------- 5th Successor (North-East)
-            //------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i - 1, j + 1)) {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i - 1, j + 1 + c, dest.first, dest.second))
-                        {
-                            // Set the Parent of the destination cell
-                            //printf("q");
-                            cellDetails[i - 1][j + 1 + c].parent_i = i;
-                            cellDetails[i - 1][j + 1 + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i - 1][j + 1] && isUnBlocked(starterArea, i - 1, j + 1, src, 1, -1))
-                {
-                    gNew = cellDetails[i][j].g + 1.414;
-                    hNew = calculateHValue(i - 1, j + 1, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i - 1][j + 1].f == FLT_MAX
-                        || cellDetails[i - 1][j + 1].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i - 1, j + 1)));
-
-                        // Update the details of this cell
-                        cellDetails[i - 1][j + 1].f = fNew;
-                        cellDetails[i - 1][j + 1].g = gNew;
-                        cellDetails[i - 1][j + 1].h = hNew;
-                        cellDetails[i - 1][j + 1].parent_i = i;
-                        cellDetails[i - 1][j + 1].parent_j = j;
-                    }
-                }
-            }
-
-            //----------- 6th Successor (North-West)
-            //------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i - 1, j - 1))
-            {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i - 1, j - 1 + c, dest.first, dest.second + g)) {
-                            // Set the Parent of the destination cell
-                            //printf("w");
-                            cellDetails[i - 1][j - 1 + c].parent_i = i;
-                            cellDetails[i - 1][j - 1 + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i - 1][j - 1] && isUnBlocked(starterArea, i - 1, j - 1, src, -1, -1))
-                {
-                    gNew = cellDetails[i][j].g + 1.414;
-                    hNew = calculateHValue(i - 1, j - 1, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i - 1][j - 1].f == FLT_MAX
-                        || cellDetails[i - 1][j - 1].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i - 1, j - 1)));
-                        // Update the details of this cell
-                        cellDetails[i - 1][j - 1].f = fNew;
-                        cellDetails[i - 1][j - 1].g = gNew;
-                        cellDetails[i - 1][j - 1].h = hNew;
-                        cellDetails[i - 1][j - 1].parent_i = i;
-                        cellDetails[i - 1][j - 1].parent_j = j;
-                    }
-                }
-            }
-
-            //----------- 7th Successor (South-East)
-            //------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i + 1, j + 1))
-            {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i + 1, j + 1 + c, dest.first, dest.second + g))
-                        {
-                            // Set the Parent of the destination cell
-                            //printf("j = %d, c = %d", j, c);
-                            //printf("e");
-
-                            cellDetails[i + 1][j + 1 + c].parent_i = i;
-                            cellDetails[i + 1][j + 1 + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i + 1][j + 1] && isUnBlocked(starterArea, i + 1, j + 1, src, 1, 1))
-                {
-                    gNew = cellDetails[i][j].g + 1.414;
-                    hNew = calculateHValue(i + 1, j + 1, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i + 1][j + 1].f == FLT_MAX
-                        || cellDetails[i + 1][j + 1].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i + 1, j + 1)));
-
-                        // Update the details of this cell
-                        cellDetails[i + 1][j + 1].f = fNew;
-                        cellDetails[i + 1][j + 1].g = gNew;
-                        cellDetails[i + 1][j + 1].h = hNew;
-                        cellDetails[i + 1][j + 1].parent_i = i;
-                        cellDetails[i + 1][j + 1].parent_j = j;
-                    }
-                }
-            }
-
-            //----------- 8th Successor (South-West)
-            //------------
-
-            // Only process this cell if this is a valid one
-            if (isValid(i + 1, j - 1))
-            {
-                // If the destination cell is the same as the
-                // current successor
-                for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-                {
-                    for (int g = 0; g <= PlayerSize; g++)
-                    {
-                        if (isDestination(i + 1, j - 1 + c, dest.first, dest.second + g))
-                        {
-                            // Set the Parent of the destination              
-                            //printf("r");
-                            cellDetails[i + 1][j - 1 + c].parent_i = i;
-                            cellDetails[i + 1][j - 1 + c].parent_j = j;
-                            //printf("The destination cell is found\n");
-                            tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, waitForNextZombieMove, ZombieXMove);
-                            foundDest = true;
-                            return;
-                        }
-                    }
-                }
-                // If the successor is already on the closed
-                // list or if it is blocked, then ignore it.
-                // Else do the following
-                if (!closedList[i + 1][j - 1] && isUnBlocked(starterArea, i + 1, j - 1, src, -1, 1))
-                {
-                    gNew = cellDetails[i][j].g + 1.414;
-                    hNew = calculateHValue(i + 1, j - 1, dest);
-                    fNew = gNew + hNew;
-
-                    // If it isn’t on the open list, add it to
-                    // the open list. Make the current square
-                    // the parent of this square. Record the
-                    // f, g, and h costs of the square cell
-                    //                OR
-                    // If it is on the open list already, check
-                    // to see if this path to that square is
-                    // better, using 'f' cost as the measure.
-                    if (cellDetails[i + 1][j - 1].f == FLT_MAX
-                        || cellDetails[i + 1][j - 1].f > fNew) {
-                        openList.insert(make_pair(
-                            fNew, make_pair(i + 1, j - 1)));
-
-                        // Update the details of this cell
-                        cellDetails[i + 1][j - 1].f = fNew;
-                        cellDetails[i + 1][j - 1].g = gNew;
-                        cellDetails[i + 1][j - 1].h = hNew;
-                        cellDetails[i + 1][j - 1].parent_i = i;
-                        cellDetails[i + 1][j - 1].parent_j = j;
-                    }
-                }
-            }
-        }
-
-        // When the destination cell is not found and the open
-        // list is empty, then we conclude that we failed to
-        // reach the destination cell. This may happen when the
-        // there is no way to destination cell (due to
-        // blockages)
-        if (foundDest == false)
-           printf("Failed to find the Destination Cell\n");
-
-        return;
-    }
-
 void WaitingTime(int& waitForNextMove, int& waitForSwordAnimation, int lastNumberPressed, int& swordCooldown, Zombie zombies[])
 {
     int i;
@@ -1962,24 +1872,14 @@ void WaitingTime(int& waitForNextMove, int& waitForSwordAnimation, int lastNumbe
     {
         if (zombies[i].waitForNextZombieMove > 0)
         {
-            zombies[i].waitForNextZombieMove++;
-        }
-       
-        if ((zombies[i].waitForNextZombieMove >= zombies[i].Zombiespeed && !zombies[i].ZombieXMove) || (zombies[i].waitForNextZombieMove >= (zombies[i].Zombiespeed / 2)  && zombies[i].ZombieXMove))
-        {
-            zombies[i].waitForNextZombieMove = 0;
-        }
+            zombies[i].waitForNextZombieMove--;
+        } 
     }
 
     if (waitForNextMove > 0)
     {
-        waitForNextMove++;
+        waitForNextMove--;
         //printf("%d", waitForNextMove);
-    }
-    if (waitForNextMove >= 6)
-    {
-        waitForNextMove = 0;
-        //printf("d");
     }
 
     //Sword
@@ -1998,12 +1898,12 @@ void WaitingTime(int& waitForNextMove, int& waitForSwordAnimation, int lastNumbe
         waitForSwordAnimation = 0;
 }
 
-void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS])
+void Sword(int sword, int& lastNumberPressed, int input, char starterArea[][COLS])
 {
-    
+    int i;
     if (sword == 1)
     {
-        if (input == 119)
+        if (input == 119 || input == 72)
         {
             if (starterArea[PlayerY - 1][PlayerX + 3] == 0)
             {
@@ -2011,7 +1911,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf("|");
             }
         }
-        else if (input == 97)
+        else if (input == 97 || input == 75)
         {
             if (starterArea[PlayerY][PlayerX - 3] == 0 && starterArea[PlayerY][PlayerX - 2] == 0 && starterArea[PlayerY][PlayerX - 1] == 0)
             {
@@ -2019,7 +1919,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf("--<");
             }
         }
-        else if (input == 115)
+        else if (input == 115 || input == 80)
         {
             if (starterArea[PlayerY - 1][PlayerX + 3] == 0)
             {
@@ -2027,7 +1927,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf("|");
             }
         }
-        else if (input == 100)
+        else if (input == 100 || input == 77)
         {
             if (starterArea[PlayerY][PlayerX + 5] == 0 && starterArea[PlayerY][PlayerX + 6] == 0 && starterArea[PlayerY][PlayerX + 7] == 0)
             {
@@ -2036,7 +1936,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
             }
         }
         // für w
-        if (lastNumberPressed == 1 && input == 97)
+        if (lastNumberPressed == 1 && (input == 97 || input == 75))
         {
             if (starterArea[PlayerY - 1][PlayerX + 5] == 0)
             {
@@ -2044,7 +1944,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf(" ");
             }
         }
-        else if (lastNumberPressed == 1 && input == 115)
+        else if (lastNumberPressed == 1 && (input == 115 || input == 80))
         {
             if (starterArea[PlayerY - 2][PlayerX + 3] == 0)
             {
@@ -2052,7 +1952,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf(" ");
             }
         }
-        else if (lastNumberPressed == 1 && input == 100)
+        else if (lastNumberPressed == 1 && (input == 100 || input == 77))
         {
             if (starterArea[PlayerY - 1][PlayerX + 1] == 0)
             {
@@ -2061,32 +1961,41 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
             }
         }
         // für a
-        else if (lastNumberPressed == 2 && input == 119)
+        else if (lastNumberPressed == 2 && (input == 119 || input == 72))
         {
-            if (starterArea[PlayerY + 1][PlayerX - 3] == 0 && starterArea[PlayerY + 1][PlayerX - 2] == 0 && starterArea[PlayerY + 1][PlayerX - 1] == 0)
+            for (i = 1; i <= 3; i++)
             {
-                gotoxy(PlayerX - 3, PlayerY + 1);
-                printf("   ");
+                if (starterArea[PlayerY + 1][PlayerX - i] == 0)
+                {
+                    gotoxy(PlayerX - i, PlayerY + 1);
+                    printf(" ");
+                }
             }
         }
-        else if (lastNumberPressed == 2 && input == 115)
+        else if (lastNumberPressed == 2 && (input == 115 || input == 80))
         {
-            if (starterArea[PlayerY - 1][PlayerX - 3] == 0 && starterArea[PlayerY - 1][PlayerX - 2] == 0 && starterArea[PlayerY - 1][PlayerX - 1] == 0)
+            for (i = 1; i <= 3; i++)
             {
-                gotoxy(PlayerX - 3, PlayerY - 1);
-                printf("   ");
+                if (starterArea[PlayerY - 1][PlayerX - i] == 0)
+                {
+                    gotoxy(PlayerX - i, PlayerY - 1);
+                    printf(" ");
+                }
             }
         }
-        else if (lastNumberPressed == 2 && input == 100)
+        else if (lastNumberPressed == 2 && (input == 100 || input == 77))
         {
-            if (starterArea[PlayerY][PlayerX - 5] == 0 && starterArea[PlayerY][PlayerX - 4] == 0 && starterArea[PlayerY][PlayerX - 3] == 0)
+            for (i = 3; i <= 5; i++)
             {
-                gotoxy(PlayerX - 5, PlayerY);
-                printf("   ");
+                if (starterArea[PlayerY][PlayerX - i] == 0)
+                {
+                    gotoxy(PlayerX - i, PlayerY);
+                    printf(" ");
+                }
             }
         }
         // für s
-        else if (lastNumberPressed == 3 && input == 119)
+        else if (lastNumberPressed == 3 && (input == 119 || input == 72))
         {
             if (starterArea[PlayerY + 2][PlayerX + 1] == 0)
             {
@@ -2094,7 +2003,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf(" ");
             }
         }
-        else if (lastNumberPressed == 3 && input == 97)
+        else if (lastNumberPressed == 3 && (input == 97 || input == 75))
         {
             if (starterArea[PlayerY + 1][PlayerX + 3] == 0)
             {
@@ -2102,7 +2011,7 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
                 printf(" ");
             }
         }
-        else if (lastNumberPressed == 3 && input == 100)
+        else if (lastNumberPressed == 3 && (input == 100 || input == 77))
         {
             if (starterArea[PlayerY + 1][PlayerX - 1] == 0)
             {
@@ -2111,102 +2020,86 @@ void Sword(int sword, int& lastNumberPressed, int input, int starterArea[][COLS]
             }
         }
         // für d
-        else if (lastNumberPressed == 4 && input == 119)
+        else if (lastNumberPressed == 4 && (input == 119 || input == 72))
         {
-            if (starterArea[PlayerY + 1][PlayerX + 5] == 0 && starterArea[PlayerY + 1][PlayerX + 6] == 0 && starterArea[PlayerY + 1][PlayerX + 7] == 0)
+            for (i = 5; i <= 7; i++)
             {
-                gotoxy(PlayerX + 5, PlayerY + 1);
-                printf("   ");
+                if (starterArea[PlayerY + 1][PlayerX + i] == 0)
+                {
+                    gotoxy(PlayerX + i, PlayerY + 1);
+                    printf(" ");
+                }
             }
         }
-        else if (lastNumberPressed == 4 && input == 97)
+        else if (lastNumberPressed == 4 && (input == 97 || input == 75))
         {
-            if (starterArea[PlayerY][PlayerX + 7] == 0 && starterArea[PlayerY][PlayerX + 8] == 0 && starterArea[PlayerY][PlayerX + 9] == 0)
+            for (i = 7; i <= 9; i++)
             {
-                gotoxy(PlayerX + 7, PlayerY);
-                printf("   ");
+                if (starterArea[PlayerY][PlayerX + i] == 0)
+                {
+                    gotoxy(PlayerX + i, PlayerY);
+                    printf(" ");
+                }
             }
         }
-        else if (lastNumberPressed == 4 && input == 115)
+        else if (lastNumberPressed == 4 && (input == 115 || input == 80))
         {
-            if (starterArea[PlayerY - 1][PlayerX + 5] == 0 && starterArea[PlayerY - 1][PlayerX + 6] == 0 && starterArea[PlayerY - 1][PlayerX + 7] == 0)
+            for (i = 5; i <= 7; i++)
             {
-                gotoxy(PlayerX + 5, PlayerY - 1);
-                printf("   ");
+                if (starterArea[PlayerY - 1][PlayerX + i] == 0)
+                {
+                    gotoxy(PlayerX + i, PlayerY - 1);
+                    printf(" ");
+                }
             }
         }
     }
 }
 
-void ECheck(int area, int starterArea[][COLS], int sword, int lastNumberPressed, int input)
+void ECheck(int area, char starterArea[][COLS], int sword, int lastNumberPressed, int input)
 {
         int i;
-        if (((starterArea[PlayerY][PlayerX] >= 2 && starterArea[PlayerY][PlayerX] != 9) || (starterArea[PlayerY][PlayerX + 1] >= 2 && starterArea[PlayerY][PlayerX + 1] != 9) || (starterArea[PlayerY][PlayerX + 2] >= 2 && starterArea[PlayerY][PlayerX + 2] != 9) || (starterArea[PlayerY][PlayerX + 3] >= 2 && starterArea[PlayerY][PlayerX + 3] != 9) || (starterArea[PlayerY][PlayerX + 4] >= 2 && starterArea[PlayerY][PlayerX + 4] != 9)))
+        int j;
+        int addX = 0;
+        int addY = -1;
+        int length = 5;
+        bool found = false;
+        for (i = 0; i < 4 && found == false; i++)
         {
+            for (j = 0; j < length; j++)
+            {
+                if (starterArea[PlayerY + addY][PlayerX + addX + j] >= 2 && starterArea[PlayerY + addY][PlayerX + addX + j] != 9)
+                {
+                    gotoxy(5, 46);
+                    printf("*press e to interact*");
+                    found = true;
+                    break;
+                   
+                }
+            }
+            if (i == 0)
+            {
+                addY = +1;
+                addX = 0;
+                length = 5;
+            }
+            else if (i == 1)
+            {
+                addY = 0;
+                addX = 4;
 
-            gotoxy(5, 46);
-            printf("*press e to interact*");
-            //waitForECheck[1] = playerX + i;
-            //waitForECheck[2] = playerY + k;
-            //gotoxy(playerX + i, playerY + k);
-            //printf("   ");
-
-
+            }
+            else if (i == 2)
+            {
+                addY = 0;
+                addX = -2;
+                length = 2;
+            }
         }
-        //oben
-        else if (((starterArea[PlayerY - 1][PlayerX] >= 2 && starterArea[PlayerY - 1][PlayerX] != 9) || (starterArea[PlayerY - 1][PlayerX + 1] >= 2 && starterArea[PlayerY - 1][PlayerX + 1] != 9) || (starterArea[PlayerY - 1][PlayerX + 2] >= 2 && starterArea[PlayerY - 1][PlayerX + 2] != 9) || (starterArea[PlayerY - 1][PlayerX + 3] >= 2 && starterArea[PlayerY - 1][PlayerX + 3] != 9) || (starterArea[PlayerY - 1][PlayerX + 4] >= 2 && starterArea[PlayerY - 1][PlayerX + 4] != 9)))
+        if (found == true)
         {
-
             gotoxy(5, 46);
             printf("*press e to interact*");
-            //waitForECheck[4] = playerX + i;
-            //waitForECheck[5] = playerY + k; 
-            //Sleep(150);
-            //gotoxy(playerX + i, playerY + k);
-            //printf("   ");
-
-        }
-        //unten
-        else if (((starterArea[PlayerY + 1][PlayerX] >= 2 && starterArea[PlayerY + 1][PlayerX] != 9) || (starterArea[PlayerY + 1][PlayerX + 1] >= 2 && starterArea[PlayerY + 1][PlayerX + 1] != 9) || (starterArea[PlayerY + 1][PlayerX + 2] >= 2 && starterArea[PlayerY + 1][PlayerX + 2] != 9) || (starterArea[PlayerY + 1][PlayerX + 3] >= 2 && starterArea[PlayerY + 1][PlayerX + 3] != 9) || (starterArea[PlayerY + 1][PlayerX + 4] >= 2 && starterArea[PlayerY + 1][PlayerX + 4] != 9)))
-        {
-
-            gotoxy(5, 46);
-            printf("*press e to interact*");
-            //waitForECheck[7] = playerX + i;
-            //waitForECheck[8] = playerY + k;
-            //Sleep(150);
-            //gotoxy(playerX + i, playerY + k);
-            //printf("   ");
-
-        }
-        //rechts
-        else if (((starterArea[PlayerY][PlayerX + 4 + 1] >= 2 && starterArea[PlayerY][PlayerX + 4 + 1] != 9) || (starterArea[PlayerY][PlayerX + 4 + 2] >= 2 && starterArea[PlayerY][PlayerX + 4 + 2] != 9)))
-        {
-
-
-            gotoxy(5, 46);
-            printf("*press e to interact*");
-            //waitForECheck[10] = playerX + i;
-            //waitForECheck[11] = playerY + k;
-            //Sleep(150);
-            //gotoxy(playerX + i, playerY + k);
-            //printf("   ");
-
-        }
-
-        //links
-        else if (((starterArea[PlayerY][PlayerX - 1] >= 2 && starterArea[PlayerY][PlayerX - 1] != 9) || (starterArea[PlayerY][PlayerX - 2] >= 2 && starterArea[PlayerY][PlayerX - 2] != 9)))
-        {
-
-            gotoxy(5, 46);
-            printf("*press e to interact*");
-            //waitForECheck[13] = playerX + i;
-            //waitForECheck[14] = playerY + k;
-
-            //Sleep(150);
-            //gotoxy(playerX + i, playerY + k);
-            //printf("   ");
-
         }
         else
         {
@@ -2215,7 +2108,7 @@ void ECheck(int area, int starterArea[][COLS], int sword, int lastNumberPressed,
         }
 }
 
-int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& sword, int lastNumberPressed)
+int Borders(int area, int& abbruch, char starterArea[][COLS], int input, int& sword, int lastNumberPressed)
 {
     // 0 = nichts
     // 1 = wand
@@ -2228,10 +2121,10 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
     // 8 = Bed
     // 9 = player
 
-
-        if (sword == 0 || sword == 2)
+     
+        if (sword == 0 || sword == 2)   
         {
-            if (input == 119)
+            if (input == 119 || input == 72)      
             {
                 for (int i = 0; i <= 4; i++)
                 {
@@ -2241,7 +2134,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                     }
                 }
             }
-            else if (input == 97)
+            else if (input == 97 || input == 75)
             {
                 
                 for (int i = 0; i <= 2; i++)
@@ -2254,7 +2147,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                     }
                 }
             }
-            else if (input == 115)
+            else if (input == 115 || input == 80)
             {
                 for (int i = 0; i <= 4; i++)
                 {
@@ -2265,7 +2158,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                     }
                 }
             }
-            else if (input == 100)
+            else if (input == 100 || input == 77)
             {
                 for (int i = 5; i < 7; i++)
                 {
@@ -2286,7 +2179,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
         // sword == 1
         else if (sword == 1)
         {
-            if (input == 119)
+            if (input == 119 || input == 72)
             {
                 for (int i = 0; i <= 4; i++)
                 {
@@ -2304,7 +2197,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                     }
                 }
             }
-            else if (input == 97)
+            else if (input == 97 || input == 75)
             {
                 for (int i = 0; i <= 5; i++)
                 {
@@ -2314,7 +2207,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         if (starterArea[PlayerY][PlayerX - 3] == 0)
                         {
                             gotoxy(PlayerX - 3, PlayerY);
-                            printf("");
+                            printf(" ");
                         }
                         if (starterArea[PlayerY][PlayerX + 5] == 0 && starterArea[PlayerY][PlayerX + 6] == 0 && starterArea[PlayerY][PlayerX + 7] == 0)
                         {
@@ -2336,7 +2229,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                             gotoxy(PlayerX + 3, PlayerY - 1);
                             printf(" ");
                         }
-                        if (starterArea[PlayerY + 1][PlayerX + 3])
+                        if (starterArea[PlayerY + 1][PlayerX + 3] == 0)
                         {
                             gotoxy(PlayerX + 3, PlayerY + 1);
                             printf(" ");
@@ -2353,10 +2246,9 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
 
                     }
 
-
                 }
             }
-            else  if (input == 115)
+            else  if (input == 115 || input == 80)
             {
                 for (int i = 0; i <= 4; i++)
                 {
@@ -2377,7 +2269,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                     }
                 }
             }
-            else  if (input == 100)
+            else  if (input == 100 || input == 77)
             {
 
                 for (int i = 0; i <= 5; i++)
@@ -2429,21 +2321,21 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
 
 
 
-            if (input != 119 && lastNumberPressed == 1)
+            if ((input != 119 && input != 72) && lastNumberPressed == 1)
             {
                 for (int i = 0; i <= 4; i++)
                 {
 
-                    if (input == 97 && (starterArea[PlayerY][PlayerX + 1] == 1 || starterArea[PlayerY][PlayerX] == 1))
+                    if ((input == 97 || input == 75) && (starterArea[PlayerY][PlayerX + 1] == 1 || starterArea[PlayerY][PlayerX] == 1))
                     {
                         return abbruch = 1;
                     }
-                    else if (input == 115 && (starterArea[PlayerY + 1][PlayerX + i] >= 1 && starterArea[PlayerY + 1][PlayerX + i]))
+                    else if ((input == 115 || input == 80) && (starterArea[PlayerY + 1][PlayerX + i] >= 1 && starterArea[PlayerY + 1][PlayerX + i]))
                     {
                         return abbruch = 1;
                     }
                     // sword in no wall
-                    else if (input == 115 && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9))
+                    else if ((input == 115 || input == 80) && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9))
                     {
                         sword = 2;
                         if (starterArea[PlayerY - 1][PlayerX + 1] == 0)
@@ -2453,7 +2345,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         }
                         return abbruch = 0;
                     }
-                    else if (input == 100 && (starterArea[PlayerY][PlayerX + 5 + 1] == 1 || starterArea[PlayerY][PlayerX + 5 + 2] == 1))
+                    else if ((input == 100 || input == 77) && (starterArea[PlayerY][PlayerX + 5 + 1] == 1 || starterArea[PlayerY][PlayerX + 5 + 2] == 1))
                     {
                         return abbruch = 1;
                     }
@@ -2472,18 +2364,18 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                 }
                 sword = 1;
             }
-            else if (input != 97 && lastNumberPressed == 2)
+            else if ((input != 97 && input != 75) && lastNumberPressed == 2)
             {
                 for (int i = 0; i <= 4; i++)
                 {
 
-                    if (input == 119 && (starterArea[PlayerY - 1][PlayerX + i] == 1))
+                    if ((input == 119 || input == 72) && (starterArea[PlayerY - 1][PlayerX + i] == 1))
                     {
 
                         return abbruch = 0;
                     }
                     // sword in no wall
-                    else if (input == 119 && (starterArea[PlayerY - 2][PlayerX + i] >= 1 && starterArea[PlayerY - 2][PlayerX + i] != 9))
+                    else if ((input == 119 || input == 72)&& (starterArea[PlayerY - 2][PlayerX + i] >= 1 && starterArea[PlayerY - 2][PlayerX + i] != 9))
                     {
                         sword = 2;
                         if (starterArea[PlayerY][PlayerX - 3] == 0 && starterArea[PlayerY][PlayerX - 2] == 0 && starterArea[PlayerY][PlayerX - 1] == 0)
@@ -2493,11 +2385,11 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         }
                         return abbruch = 0;
                     }
-                    else if (input == 115 && (starterArea[PlayerY + 1][PlayerX + i] == 1))
+                    else if ((input == 115 || input == 80) && (starterArea[PlayerY + 1][PlayerX + i] == 1))
                     {
                         return abbruch = 1;
                     }
-                    else if (input == 115 && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9))
+                    else if ((input == 115 || input == 80) && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9))
                     {
                         sword = 2;
                         if (starterArea[PlayerY][PlayerX - 3] == 0 && starterArea[PlayerY][PlayerX - 2] == 0 && starterArea[PlayerY][PlayerX - 1] == 0)
@@ -2507,7 +2399,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         }
                         return abbruch = 0;
                     }
-                    else if (input == 100 && (starterArea[PlayerY][PlayerX + 4 + i] >= 1 && starterArea[PlayerY][PlayerX + 4 + i] != 9 ))
+                    else if ((input == 100 || input == 77) && (starterArea[PlayerY][PlayerX + 4 + i] >= 1 && starterArea[PlayerY][PlayerX + 4 + i] != 9 ))
                     {
                         if (starterArea[PlayerY][PlayerX - 3] == 0)
                         {
@@ -2522,16 +2414,16 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
 
                 sword = 1;
             }
-            else if (input != 115 && lastNumberPressed == 3)
+            else if ((input != 115 && input != 80) && lastNumberPressed == 3)
             {
                 for (int i = 0; i <= 4; i++)
                 {
-                    if (input == 119 && (starterArea[PlayerY - 1][PlayerX + i] >= 1 && starterArea[PlayerY - 1][PlayerX + i] != 9))
+                    if ((input == 119 || input == 72) && (starterArea[PlayerY - 1][PlayerX + i] >= 1 && starterArea[PlayerY - 1][PlayerX + i] != 9))
                     {
                         return abbruch = 1;
                     }
                     // sword in no wall
-                    else if (input == 119 && (starterArea[PlayerY - 2][PlayerX + i] >= 1 && starterArea[PlayerY - 2][PlayerX + i] != 9))
+                    else if ((input == 119 || input == 72) && (starterArea[PlayerY - 2][PlayerX + i] >= 1 && starterArea[PlayerY - 2][PlayerX + i] != 9))
                     {
                         sword = 2;
                         if (starterArea[PlayerY + 1][PlayerX + 1] == 0)
@@ -2546,7 +2438,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         }
                         return abbruch = 0;
                     }
-                    else if (input == 97 && (starterArea[PlayerY][PlayerX - i] >= 1 || starterArea[PlayerY][PlayerX - i] != 9))
+                    else if ((input == 97 || input == 75) && (starterArea[PlayerY][PlayerX - i] >= 1 || starterArea[PlayerY][PlayerX - i] != 9))
                     {
 
                         if (starterArea[PlayerY][PlayerX + 5] == 0 && starterArea[PlayerY][PlayerX + 6] == 0 && starterArea[PlayerY][PlayerX + 7] == 0)
@@ -2557,11 +2449,11 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         sword = 1;
                         return abbruch = 0;
                     }
-                    else if (input == 100 && (starterArea[PlayerY][PlayerX + 2 + i] >= 1 && starterArea[PlayerY][PlayerX + 2 + i] != 9))
+                    else if ((input == 100 || input == 77) && (starterArea[PlayerY][PlayerX + 2 + i] >= 1 && starterArea[PlayerY][PlayerX + 2 + i] != 9))
                     {
                         return abbruch = 1;
                     }
-                    else if (input == 100 && (starterArea[PlayerY][PlayerX - 1] == 0 && starterArea[PlayerY][PlayerX - 2] == 0 && starterArea[PlayerY][PlayerX - 3 == 0]))
+                    else if ((input == 100 || input == 77) && (starterArea[PlayerY][PlayerX - 1] == 0 && starterArea[PlayerY][PlayerX - 2] == 0 && starterArea[PlayerY][PlayerX - 3 == 0]))
                     {
                         
                         return abbruch = 0;
@@ -2580,17 +2472,17 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                 
                 sword = 1;
             }
-            else if (input != 100 && lastNumberPressed == 4)
+            else if ((input != 100 && input != 77) && lastNumberPressed == 4)
             {
                 for (int i = 0; i <= 4; i++)
                 {
-                    if (input == 119 && (starterArea[PlayerY - 1][PlayerX + i] >= 1 && starterArea[PlayerY - 1][PlayerX + i] != 9))
+                    if ((input == 119 || input == 72) && (starterArea[PlayerY - 1][PlayerX + i] >= 1 && starterArea[PlayerY - 1][PlayerX + i] != 9))
                     {
 
                         return abbruch = 1;
                     }
                     // sword in no wall
-                    else if (input == 119 && (starterArea[PlayerY - 2][PlayerX + i] >= 1 && starterArea[PlayerY - 2][PlayerX + i] != 9))
+                    else if ((input == 119 || input == 72) && (starterArea[PlayerY - 2][PlayerX + i] >= 1 && starterArea[PlayerY - 2][PlayerX + i] != 9))
                     {
                         sword = 2;
                         if (starterArea[PlayerY][PlayerX + 5] == 0 && starterArea[PlayerY][PlayerX + 6] == 0 && starterArea[PlayerY][PlayerX + 7] == 0)
@@ -2600,7 +2492,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                         }
                         return abbruch = 0;
                     }
-                    else if (input == 97 && (starterArea[PlayerY][PlayerX - 1 - i] >= 1 && starterArea[PlayerY][PlayerX - 1 - i] != 9))
+                    else if ((input == 97 || input == 75) && (starterArea[PlayerY][PlayerX - 1 - i] >= 1 && starterArea[PlayerY][PlayerX - 1 - i] != 9))
                     {
                         if (starterArea[PlayerY][PlayerX + 5] == 0 && starterArea[PlayerY][PlayerX + 6] == 0 && starterArea[PlayerY][PlayerX + 7] == 0)
                         {
@@ -2616,7 +2508,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                             return abbruch = 0;
                         }
                     }
-                    else if (input == 115 && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9 || starterArea[PlayerY + 1][PlayerX + i] >= 1 && starterArea[PlayerY + 1][PlayerX + i] != 9))
+                    else if ((input == 115 || input == 80) && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9 || starterArea[PlayerY + 1][PlayerX + i] >= 1 && starterArea[PlayerY + 1][PlayerX + i] != 9))
                     {
 
                         //sword = 2;
@@ -2634,7 +2526,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                             return abbruch = 0;
                         }
                     }
-                    else if (input == 115 && (starterArea[PlayerY + 1][PlayerX + i] == 1))
+                    else if ((input == 115 || input == 80) && (starterArea[PlayerY + 1][PlayerX + i] == 1))
                     {
 
                         return abbruch = 1;
@@ -2643,7 +2535,7 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
 
                 sword = 1;
             }
-            else if (input == 119 && lastNumberPressed == 1)
+            else if ((input == 119 || input == 72) && lastNumberPressed == 1)
             {
                 for (int i = 0; i <= 4; i++)
                 {
@@ -2657,11 +2549,11 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
 
                 sword = 1;
             }
-            else if (input == 97 && (lastNumberPressed == 2))
+            else if ((input == 97 || input == 75) && (lastNumberPressed == 2))
             {
                 for (int i = 0; i <= 4; i++)
                 {
-                    if (input == 97 && (starterArea[PlayerY][PlayerX - 1 - i] >= 1 && starterArea[PlayerY][PlayerX - 1 - i] != 9))
+                    if ((input == 97 || input == 75) && (starterArea[PlayerY][PlayerX - 1 - i] >= 1 && starterArea[PlayerY][PlayerX - 1 - i] != 9))
                     {
                         sword = 2;
                         return abbruch = 0;
@@ -2670,11 +2562,11 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                 sword = 1;
 
             }
-            else if (input == 115 && lastNumberPressed == 3)
+            else if ((input == 115 || input == 80) && lastNumberPressed == 3)
             {
                 for (int i = 0; i <= 4; i++)
                 {
-                    if (input == 115 && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9))
+                    if ((input == 115 || input == 80) && (starterArea[PlayerY + 2][PlayerX + i] >= 1 && starterArea[PlayerY + 2][PlayerX + i] != 9))
                     {
                         sword = 2;
                         
@@ -2683,11 +2575,11 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
                 }
                 sword = 1;
             }
-            else if (input == 100 && (lastNumberPressed == 4))
+            else if ((input == 100 || input == 77) && (lastNumberPressed == 4))
             {
                 for (int i = 0; i <= 7; i++)
                 {
-                    if (input == 100 && (starterArea[PlayerY][PlayerX + i] >= 1 && starterArea[PlayerY][PlayerX + i] != 9))
+                    if ((input == 100 || input == 77) && (starterArea[PlayerY][PlayerX + i] >= 1 && starterArea[PlayerY][PlayerX + i] != 9))
                     {
                         sword = 2;
                         return abbruch = 0;
@@ -2708,26 +2600,26 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
             return abbruch = 2;
         }
         //oben
-        else if (((starterArea[PlayerY - 1][PlayerX] >= 2 && starterArea[PlayerY - 1][PlayerX] != 9) || (starterArea[PlayerY - 1][PlayerX + 1] >= 2 && starterArea[PlayerY - 1][PlayerX + 1] != 9) || (starterArea[PlayerY - 1][PlayerX + 2] >= 2 && starterArea[PlayerY - 1][PlayerX + 2] != 9) || (starterArea[PlayerY - 1][PlayerX + 3] >= 2 && starterArea[PlayerY - 1][PlayerX + 3] != 9) || (starterArea[PlayerY - 1][PlayerX + 4] >= 2 && starterArea[PlayerY - 1][PlayerX + 4] != 9)) && input == 119)
+        else if (((starterArea[PlayerY - 1][PlayerX] >= 2 && starterArea[PlayerY - 1][PlayerX] != 9) || (starterArea[PlayerY - 1][PlayerX + 1] >= 2 && starterArea[PlayerY - 1][PlayerX + 1] != 9) || (starterArea[PlayerY - 1][PlayerX + 2] >= 2 && starterArea[PlayerY - 1][PlayerX + 2] != 9) || (starterArea[PlayerY - 1][PlayerX + 3] >= 2 && starterArea[PlayerY - 1][PlayerX + 3] != 9) || (starterArea[PlayerY - 1][PlayerX + 4] >= 2 && starterArea[PlayerY - 1][PlayerX + 4] != 9)) && (input == 119 || input == 72))
         {
 
             return abbruch = 2;
 
         }
         //unten
-        else if (((starterArea[PlayerY + 1][PlayerX] >= 2 && starterArea[PlayerY + 1][PlayerX] != 9) || (starterArea[PlayerY + 1][PlayerX + 1] >= 2 && starterArea[PlayerY + 1][PlayerX + 1] != 9) || (starterArea[PlayerY + 1][PlayerX + 2] >= 2 && starterArea[PlayerY + 1][PlayerX + 2] != 9) || (starterArea[PlayerY + 1][PlayerX + 3] >= 2 && starterArea[PlayerY + 1][PlayerX + 3] != 9) || (starterArea[PlayerY + 1][PlayerX + 4] >= 2 && starterArea[PlayerY + 1][PlayerX + 4] != 9)) && input == 115)
+        else if (((starterArea[PlayerY + 1][PlayerX] >= 2 && starterArea[PlayerY + 1][PlayerX] != 9) || (starterArea[PlayerY + 1][PlayerX + 1] >= 2 && starterArea[PlayerY + 1][PlayerX + 1] != 9) || (starterArea[PlayerY + 1][PlayerX + 2] >= 2 && starterArea[PlayerY + 1][PlayerX + 2] != 9) || (starterArea[PlayerY + 1][PlayerX + 3] >= 2 && starterArea[PlayerY + 1][PlayerX + 3] != 9) || (starterArea[PlayerY + 1][PlayerX + 4] >= 2 && starterArea[PlayerY + 1][PlayerX + 4] != 9)) && (input == 115 || input == 80))
         {
             return abbruch = 2;
 
         }
         //rechts
-        else if (((starterArea[PlayerY][PlayerX + 1] >= 2 && starterArea[PlayerY][PlayerX + 1] != 9) || (starterArea[PlayerY][PlayerX + 1 + 1] >= 2 && starterArea[PlayerY][PlayerX + 1 + 1] != 9) || (starterArea[PlayerY][PlayerX + 2 + 1] >= 2 && starterArea[PlayerY][PlayerX + 2 + 1] != 9) || (starterArea[PlayerY][PlayerX + 3 + 1] >= 2 && starterArea[PlayerY][PlayerX + 3 + 1] != 9) || (starterArea[PlayerY][PlayerX + 4 + 1] >= 2 && starterArea[PlayerY][PlayerX + 4 + 1] != 9)) && input == 100)
+        else if (((starterArea[PlayerY][PlayerX + 1] >= 2 && starterArea[PlayerY][PlayerX + 1] != 9) || (starterArea[PlayerY][PlayerX + 1 + 1] >= 2 && starterArea[PlayerY][PlayerX + 1 + 1] != 9) || (starterArea[PlayerY][PlayerX + 2 + 1] >= 2 && starterArea[PlayerY][PlayerX + 2 + 1] != 9) || (starterArea[PlayerY][PlayerX + 3 + 1] >= 2 && starterArea[PlayerY][PlayerX + 3 + 1] != 9) || (starterArea[PlayerY][PlayerX + 4 + 1] >= 2 && starterArea[PlayerY][PlayerX + 4 + 1] != 9)) && (input == 100 || input == 77))
         {
             return abbruch = 2;
 
         }
         //links
-        else if (((starterArea[PlayerY][PlayerX - 1] >= 2 && starterArea[PlayerY][PlayerX - 1] != 9) || (starterArea[PlayerY][PlayerX + 1 - 1] >= 2 && starterArea[PlayerY][PlayerX + 1 - 1] != 9) || (starterArea[PlayerY][PlayerX + 2 - 1] >= 2 && starterArea[PlayerY][PlayerX + 2 - 1] != 9) || (starterArea[PlayerY][PlayerX + 3 - 1] >= 2 && starterArea[PlayerY][PlayerX + 3 - 1] != 9) || (starterArea[PlayerY][PlayerX + 4 - 1] >= 2 && starterArea[PlayerY][PlayerX + 4 - 1] != 9)) && input == 97)
+        else if (((starterArea[PlayerY][PlayerX - 1] >= 2 && starterArea[PlayerY][PlayerX - 1] != 9) || (starterArea[PlayerY][PlayerX + 1 - 1] >= 2 && starterArea[PlayerY][PlayerX + 1 - 1] != 9) || (starterArea[PlayerY][PlayerX + 2 - 1] >= 2 && starterArea[PlayerY][PlayerX + 2 - 1] != 9) || (starterArea[PlayerY][PlayerX + 3 - 1] >= 2 && starterArea[PlayerY][PlayerX + 3 - 1] != 9) || (starterArea[PlayerY][PlayerX + 4 - 1] >= 2 && starterArea[PlayerY][PlayerX + 4 - 1] != 9)) && (input == 97 || input == 75))
         {
             return abbruch = 2;
 
@@ -2742,22 +2634,17 @@ int Borders(int area, int& abbruch, int starterArea[][COLS], int input, int& swo
     
 }
 
-void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int keys[], int& swordCooldown, int firstTimeInArea[], Zombie zombies[])
+void PlayersMovement(int& input, int abbruch, int& area, int& sword, char starterArea[][COLS], int& lastNumberPressed, int& swordAnimationPhase, int inventory[], int& swordCooldown, int firstTimeInArea[], Zombie zombies[])
 {
     int i;
     int k;
-    setlocale(LC_ALL, "");
 
-
-    //ECheck(area, playerX, playerY, starterArea, sword, waitForECheck, lastNumberPressed);
-
-    //Borders(Area, playerX, playerY, abbruch, starterArea);
     //fürs nach oben scrollen
     gotoxy(140, 1);
     printf(" ");
     //input = _getch();
 
-    if (input == 119)
+    if (input == 119 || input == 72)
     {
         //playerY--;
         Borders(area, abbruch, starterArea, input, sword, lastNumberPressed);
@@ -2773,7 +2660,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
 
 
             gotoxy(PlayerX, PlayerY);
-            printf("[°-°]");
+            printf("[\xC2\xB0-\xC2\xB0]");
             /*
             gotoxy(playerX - 1, playerY);
             printf("%d%d%d%d%d%d%d%d", starterArea[playerY][playerX - 1], starterArea[playerY][playerX], starterArea[playerY][playerX + 1], starterArea[playerY][playerX + 2], starterArea[playerY][playerX + 3], starterArea[playerY][playerX + 4], starterArea[playerY][playerX + 5], starterArea[playerY][playerX + 6]);
@@ -2794,7 +2681,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             //playerY++;
         }
     }
-    else if (input == 97)
+    else if (input == 97 || input == 75)
     {
 
         //playerX -= 2;
@@ -2811,7 +2698,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 starterArea[PlayerY][PlayerX + i + 5] = 0;
             }
             gotoxy(PlayerX, PlayerY);
-            printf("[°-°]");
+            printf("[\xC2\xB0-\xC2\xB0]");
             /*
             gotoxy(playerX - 1, playerY);
             printf("%d%d%d%d%d%d%d%d", starterArea[playerY][playerX - 1], starterArea[playerY][playerX], starterArea[playerY][playerX + 1], starterArea[playerY][playerX + 2], starterArea[playerY][playerX + 3], starterArea[playerY][playerX + 4], starterArea[playerY][playerX + 5], starterArea[playerY][playerX + 6]);
@@ -2832,7 +2719,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
 
         }
     }
-    else if (input == 115)
+    else if (input == 115 || input == 80)
     {
 
         //playerY++;
@@ -2849,7 +2736,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             }
 
             gotoxy(PlayerX, PlayerY);
-            printf("[°-°]");
+            printf("[\xC2\xB0-\xC2\xB0]");  
             /*
              gotoxy(playerX - 1, playerY);
              printf("%d%d%d%d%d%d%d%d", starterArea[playerY][playerX - 1], starterArea[playerY][playerX], starterArea[playerY][playerX + 1], starterArea[playerY][playerX + 2], starterArea[playerY][playerX + 3], starterArea[playerY][playerX + 4], starterArea[playerY][playerX + 5], starterArea[playerY][playerX + 6]);
@@ -2871,7 +2758,7 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
 
         }
     }
-    else if (input == 100)
+    else if (input == 100 || input == 77)
     {
 
         //playerX += 2;
@@ -2882,20 +2769,17 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             PlayerX += 2;
             for (int i = 0; i < 2; i++)
             {
-                if (starterArea[PlayerY][PlayerX + 4 + 1] == 0 || starterArea[PlayerY][PlayerX + 4 + 2] == 0)
-                {
                     starterArea[PlayerY][PlayerX + 3 + i] = 9;
                     starterArea[PlayerY][PlayerX - i - 1] = 0;
-                }
             }
 
 
             gotoxy(PlayerX, PlayerY);
-            printf("[°-°]");
-            /*
-            gotoxy(playerX - 2, playerY);
-            printf("%d%d%d%d%d%d%d%d%d",starterArea[playerY][playerX - 2], starterArea[playerY][playerX - 1], starterArea[playerY][playerX], starterArea[playerY][playerX + 1], starterArea[playerY][playerX + 2], starterArea[playerY][playerX + 3], starterArea[playerY][playerX + 4], starterArea[playerY][playerX + 5], starterArea[playerY][playerX + 6]);
-            */
+            printf("[\xC2\xB0-\xC2\xB0]");
+
+            //gotoxy(PlayerX - 2, PlayerY);
+            //printf("%d%d%d%d%d%d%d%d%d",starterArea[PlayerY][PlayerX - 2], starterArea[PlayerY][PlayerX - 1], starterArea[PlayerY][PlayerX], starterArea[PlayerY][PlayerX + 1], starterArea[PlayerY][PlayerX + 2], starterArea[PlayerY][PlayerX + 3], starterArea[PlayerY][PlayerX + 4], starterArea[PlayerY][PlayerX + 5], starterArea[PlayerY][PlayerX + 6]);
+            
 
             Sword(sword, lastNumberPressed, input, starterArea);
             lastNumberPressed = 4;
@@ -2947,24 +2831,13 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             }
         }
         
-        
+
         if (area == 1)
         {
             //für 2
             if (SeenValue == 2)
             {
-                
-                    gotoxy(5, 46);
-                    printf("                     ");
-                    gotoxy(5, 46);
-                    printf("stuff that you need for some science sht");
-                    Sleep(2000);
-                    gotoxy(5, 46);
-                    printf("                                          ");
-                    FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
-
-                
+                    TextPrinter(5, 46, "stuff that you need for some science shit", 2000);
             }
 
             //für 3
@@ -2976,10 +2849,13 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 printf("A Laptop...");
                 Sleep(1000);
                 gotoxy(17, 46);
-                printf("but what is the passcode");
-                Sleep(2000);
+                printf("on the screen is a indian guy giving a tutorial on how to make a dissolvant acid *you finish the video*");
+                Sleep(6000);
                 gotoxy(5, 46);
-                printf("                                               ");
+                printf("                                                                                                                      ");
+
+                inventory[1] = 1;
+
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 
             }
@@ -2987,62 +2863,27 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             //für 4
             else if (SeenValue == 4)
             {
-                gotoxy(5, 46);
-                printf("                     ");
-                gotoxy(5, 46);
-                printf("*A paper with lots of science, that you are to dumb for!*");
-                Sleep(3000);
-                gotoxy(5, 46);
-                printf("                                                          ");
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
+                TextPrinter(5, 46, "*A paper with lots of science, that you are to dumb for!*", 3000);
             }
             //für 5
             else if (SeenValue == 5)
             {
-                gotoxy(5, 46);
-                printf("                     ");
-                gotoxy(5, 46);
-                printf("*A microscope with blood on it.*");
-                Sleep(2000);
-                gotoxy(5, 46);
-                printf("                                ");
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
+                TextPrinter(5, 46, "*A microscope with blood on it.*", 2000);
             }
             //für 6 tools
             else if (SeenValue == 6)
             {
-                gotoxy(5, 46);
-                printf("                     ");
-                gotoxy(5, 46);
-                printf("*A couple of tools* and no you cant pick them up because im to lazy");
-                Sleep(5000);
-                gotoxy(5, 46);
-                printf("                                                                   ");
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
+                TextPrinter(5, 46, "*A couple of tools* and no you cant pick them up because im to lazy*", 5000);
             }
             // für 7
             else if (SeenValue == 7)
             {
-               
-                gotoxy(5, 46);
-                printf("                     ");
-                gotoxy(5, 46);
-                printf("*the door opens*");
-                Sleep(1000);
-                gotoxy(5, 46);
-                printf("                    ");
+                TextPrinter(5, 46, "*the door opens*", 1000);
 
                 PlayerX = 42;
                 PlayerY = 11;
                 area = 2;
-                ChangeArea(area, starterArea, firstTimeInArea, zombies);
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-                
-
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
             }
 
             //für 8 sickbed
@@ -3055,31 +2896,18 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 Sleep(1000);
                 gotoxy(5, 46);
                 printf("         ");
+                TextPrinter(5, 46, "*the door opens*", 1000);
                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
             }
             //für 10 standard Zombie(kein loot)
             else if (SeenValue == 10)
             {
-                gotoxy(5, 46);
-                printf("                     ");
-                gotoxy(5, 46);
-                printf("Hes a btch with no loot");
-                Sleep(2000);
-                gotoxy(5, 46);
-                printf("                       ");
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+                TextPrinter(5, 46, "Hes a btch with no loot", 2000);
             }
             //für 11 (some random stuff)
             else if (SeenValue == 11)
             {
-                gotoxy(5, 46);
-                printf("                     ");
-                gotoxy(5, 46);
-                printf("Im to stupid to think of other stuff");
-                Sleep(4000);
-                gotoxy(5, 46);
-                printf("                                                 ");
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+                TextPrinter(5, 46, "Im to stupid to think of other stuff", 4000);
             }    
             //für 20 DoctorsZombie
             else if (SeenValue == 20)
@@ -3087,13 +2915,13 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
                 gotoxy(5, 46);
                 printf("                     ");
                 gotoxy(5, 46);
-                printf("He seemed to be a scientist...");
+                printf("He seemed to be a lab supervisor...");
                 Sleep(2000);
-                if (keys[0] == 0)
+                if (inventory[0] == 0)
                 {
-                    printf(" *you acquired a key*");
+                    printf(" *you took his ID Badge*");
                     Sleep(2000);
-                    keys[0] = 1;
+                    inventory[0] = 1;
                 }
                 gotoxy(5, 46);
                 printf("                                                      ");
@@ -3106,118 +2934,68 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             if (SeenValue == 2)
             {
 
-                gotoxy(5, 46);
-                printf("                            ");
-                gotoxy(5, 46);
-                printf("*the door opens (lagerraum)*");
-                Sleep(1000);
-                gotoxy(5, 46);
-                printf("                            ");
+                TextPrinter(5, 46, "*the door opens*", 1000);
 
+                PlayerX = 115;
+                PlayerY = 16;
+                area = 3;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
 
-                 FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 
             }
             //door to the exit
             else if (SeenValue == 3)
             {
-
-                gotoxy(5, 46);
-                printf("                            ");
-                gotoxy(5, 46);
-                printf("*the door opens (exit)*");
-                Sleep(1000);
-                gotoxy(5, 46);
-                printf("                            ");
-
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
+                if (inventory[9] == 1)
+                {
+                    TextPrinter(5, 46, "*the door opens*", 1000);
+                }
+                else
+                {
+                    TextPrinter(5, 46, "*the door needs electricity to open*", 3000);
+                }
             }
             // door to the lab
             else if (SeenValue == 4)
             {
-
-                gotoxy(5, 46);
-                printf("                            ");
-                gotoxy(5, 46);
-                printf("*the door opens (lab)*");
-                Sleep(1000);
-                gotoxy(5, 46);
-                printf("                            ");
-
+                TextPrinter(5, 46, "*the door opens*", 1000);
                 PlayerX = 69;
                 PlayerY = 2;
                 area = 1;
-                ChangeArea(area, starterArea, firstTimeInArea, zombies);
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
             }
             // door to the closet
             else if (SeenValue == 5)
             {
-
-                gotoxy(5, 46);
-                printf("                            ");
-                gotoxy(5, 46);
-                printf("*the door opens (closet)*");
-                Sleep(1000);
-                gotoxy(5, 46);
-                printf("                            ");
-
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
+                TextPrinter(5, 46, "*the door opens*", 1000);
+                PlayerX = 47;
+                PlayerY = 29;
+                area = 6;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
             }
             // the open door
             else if (SeenValue == 6)
             {
-
-                gotoxy(5, 46);
-                printf("                            ");
-                gotoxy(5, 46);
-                printf("*the door opens (openDoor)*");
-                Sleep(1000);
-                gotoxy(5, 46);
-                printf("                            ");
-
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
+                TextPrinter(5, 46, "*the door opens*", 1000);
+                PlayerX = 10;
+                PlayerY = 29;
+                area = 5;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
             }
             // left dead person
             else if (SeenValue == 7)
             {
-                gotoxy(5, 46);
-                printf("This person died a terrifying death");
-                Sleep(3000);
-                gotoxy(5, 46);
-                printf("                                   ");
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+                TextPrinter(5, 46, "This person died a terrifying death", 3000);
             }
             // the rolling bed
             else if (SeenValue == 8)
             {
-                gotoxy(5, 46);
-                printf("what happend to the person on that bed?");
-                Sleep(4000);
-                gotoxy(5, 46);
-                printf("                                       ");
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+                TextPrinter(5, 46, "what happend to the person on that bed?", 4000);
             }
             // the fast Zombie
             else if (SeenValue == 10)
             {
-                gotoxy(5, 46);
-                printf("Is he like a mutation or what was that");
-                Sleep(3000);
-                gotoxy(5, 46);
-                printf("                                      ");
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+                TextPrinter(5, 46, "Is he like a mutation or what was that", 3000);
             }
             // the eaten up person
             else if (SeenValue == 11)
@@ -3237,14 +3015,445 @@ void PlayersMovement(int& input, int abbruch, int& area, int& sword, int starter
             }
             else if (SeenValue == 12)
             {
-                gotoxy(5, 46);
-                printf("yeah I dont think hes alive!");
-                Sleep(2000);
-                gotoxy(5, 46);
-                printf("                            ");
-
-                FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+                TextPrinter(5, 46, "yeah I dont think hes alive!", 2000);
             }
+        }
+        else if (area == 3)
+        {
+            // chem bottles
+            if (SeenValue == 2)
+            {
+                TextPrinter(5, 46, "*Assorted chemical bottles. Labels are faded.*", 3000);
+            }
+            // drums
+            else if (SeenValue == 3)
+            {
+                TextPrinter(5, 46, "*Heavy chemical drums. Too large to move.*", 3000);
+            }
+            // reagents
+            else if (SeenValue == 4)
+            {
+                TextPrinter(5, 46, "*Various lab reagents. Some look unstable.*", 3000);
+            }
+            // acids
+            else if (SeenValue == 5)
+            {
+                TextPrinter(5, 46, "*Strong acids. The container is still intact.*", 3000);
+                if (inventory[1] == 1 && inventory[2] != 1)
+                {
+                    TextPrinter(5, 46, "Always nice *You grab the container*", 3000);
+                    inventory[2] = 1;
+                }
+            }
+            // boxes
+            else if (SeenValue == 6)
+            {
+                TextPrinter(5, 46, "*Cardboard boxes filled with paperwork.*", 3000);
+            }
+            // kits
+            else if (SeenValue == 7)
+            {
+                TextPrinter(5, 46, "*Emergency kits. Most are empty.*", 2000);
+            }
+            // PPE
+            else if (SeenValue == 8)
+            {
+                TextPrinter(5, 46, "*Protective gear. Some pieces are missing.*", 3000);
+            }
+            else if (SeenValue == 10)
+            {
+                TextPrinter(5, 46, "Hes a btch with no loot", 2000);
+            }
+            // sterile goods
+            else if (SeenValue == 51)
+            {
+                TextPrinter(5, 46, "*Sterile supplies sealed in plastic.*", 3000);
+            }
+            // screwdrivers
+            else if (SeenValue == 52)
+            {
+                TextPrinter(5, 46, "*A set of screwdrivers. Still usable.*", 3000);
+                if (inventory[1] != 1 && inventory[6] != 1)
+                {
+                    TextPrinter(5, 46, "Always usefull *You grab it*", 3000);
+                    inventory[6] = 1;
+                }
+            }
+            // wires
+            else if (SeenValue == 53)
+            {
+                TextPrinter(5, 46, "*Loose wiring. Insulation is damaged.*", 3000);
+            }
+            // spare parts
+            else if (SeenValue == 54)
+            {
+                TextPrinter(5, 46, "*Mechanical spare parts. Mostly rusted.*", 3000);
+            }
+            // bio bags
+            else if (SeenValue == 55)
+            {
+                TextPrinter(5, 46, "*Biohazard bags. Some are leaking.*", 3000);
+            }
+            // clamps
+            else if (SeenValue == 56)
+            {
+                TextPrinter(5, 46, "*Metal clamps. Some covered in corrosion.*", 3000);
+                if (inventory[1] != 1 && inventory[7] != 1)
+                {
+                    TextPrinter(5, 46, "They look handy *You grab them*", 3000);
+                    inventory[7] = 1;
+                }
+            }
+            // tubes
+            else if (SeenValue == 57)
+            {
+                TextPrinter(5, 46, "*Flexible tubing. Brittle with age.*", 2000);
+            }
+            // masks
+            else if (SeenValue == 58)
+            {
+                TextPrinter(5, 46, "*Disposable masks. Most are expired.*", 3000);
+            }
+            // gloves
+            else if (SeenValue == 59)
+            {
+                TextPrinter(5, 46, "*Protective gloves. Still intact.*", 2000);
+                if (inventory[1] != 1 && inventory[5] != 1)
+                {
+                    TextPrinter(5, 46, "Dont want to hurt myself! right? *You equip them*", 4000);
+                    inventory[5] = 1;
+                }
+            }
+            // cold packs
+            else if (SeenValue == 60)
+            {
+                TextPrinter(5, 46, "*Cold packs. No longer cold.*", 2000);
+            }
+            // meds
+            else if (SeenValue == 61)
+            {
+                TextPrinter(5, 46, "*Medication. Labels scratched off.*", 2000);
+            }
+            // vials
+            else if (SeenValue == 62)
+            {
+                TextPrinter(5, 46, "*Glass vials filled with unknown liquids.*", 3000);
+            }
+            // syringes
+            else if (SeenValue == 63)
+            {
+                TextPrinter(5, 46, "*Used syringes. Better not touch.*", 3000);
+            }
+            // sample jar
+            else if (SeenValue == 64)
+            {
+                TextPrinter(5, 46, "*A sample jar containing organic residue.*", 3000);
+                if (inventory[1] == 1 && inventory[4] != 1)
+                {
+                    TextPrinter(5, 46, "great for mixing and maybe usefull *You grab it*", 4000);
+                    inventory[4] = 1;
+                }
+            }
+            // cleaning fluids
+            else if (SeenValue == 65)
+            {
+                TextPrinter(5, 46, "*Industrial cleaning fluids. Strong smell.*", 3000);
+                if (inventory[1] == 1 && inventory[3] != 1)
+                {
+                    TextPrinter(5, 46, "*You pick it up*", 2000);
+                    inventory[3] = 1;
+                }
+            }
+            // door to the machine room
+            else if (SeenValue == 66)
+            {
+                TextPrinter(5, 46, "*You open the door*", 2000);
+                PlayerX = 55;
+                PlayerY = 29;
+                area = 4;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
+                }
+            // door to the hallway
+            else if (SeenValue == 68)
+            {
+                TextPrinter(5, 46, "*You open the door*", 2000);
+                PlayerX = 2;
+                PlayerY = 8;
+                area = 2;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
+                }
+            // breakable pipe
+            else if (SeenValue == 69)
+            {
+                if (!(inventory[2] == 1 && inventory[3] == 1 && inventory[4] == 1)||!(inventory[5] == 1 && inventory[6] == 1 && inventory[7] == 1))
+                {
+                    TextPrinter(5, 46, "*A damaged pipe fixed to the wall. Maybe its good as a weapon.*", 4000);
+                }
+
+                if (inventory[1] == 1)
+                {
+                    if (inventory[2] != 1)
+                    {
+                        gotoxy(27, 10);
+                        printf("\033[33macids\033[0m");
+                    }
+                    if (inventory[3] != 1)
+                    {
+                        gotoxy(90, 24);
+                        printf("\033[33mcleaning fluids\033[0m");
+                    }
+                    if (inventory[4] != 1)
+                    {
+                        gotoxy(93, 22);
+                        printf("\033[33msample jars\033[0m");
+                    }
+                }
+                else
+                {
+                    if (inventory[7] != 1)
+                    {
+                        gotoxy(16, 22);
+                        printf("\033[33mclamps\033[0m");
+                    }
+                    if (inventory[5] != 1)
+                    {
+                        gotoxy(28, 24);
+                        printf("\033[33mgloves\033[0m");
+                    }
+                    if (inventory[6] != 1)
+                    {
+                        gotoxy(86, 8);
+                        printf("\033[33mscrewdrivers\033[0m");
+                    }
+                }
+                if (inventory[2] == 1 && inventory[3] == 1 && inventory[4] == 1)
+                {
+                    TextPrinter(5, 46, "*You broke down the pipe using chemicals*", 3000);
+                    TextPrinter(5, 46, "*You equiped the pipe*", 2000);
+                    sword = 1;
+                }
+                if (inventory[2] != 1 && inventory[5] == 1 && inventory[6] == 1 && inventory[7] == 1)
+                {
+                    TextPrinter(5, 46, "*You broke down the pipe*", 3000);
+                    TextPrinter(5, 46, "*You equiped the pipe*", 2000);
+                    sword = 1;
+                }
+            }
+            
+        }
+        else if (area == 4)
+        {
+            if (SeenValue == 2)
+            {
+                TextPrinter(5, 46, "Please Hargassner I need this!!!", 3000);
+            }
+            else if (SeenValue == 3)
+            {
+                if (inventory[8] == 1)
+                {
+                    TextPrinter(5, 46, "*The generator starts running*", 3000);
+                    inventory[9] = 1;
+                    gotoxy(89, 9);
+                    printf("\033[5;32mo\033[0m");
+                }
+                else
+                {
+                    TextPrinter(5, 46, "*Generator not running, missing key*", 3000);
+                }
+            }
+            else if (SeenValue == 4)
+            {
+                if (inventory[9] == 1)
+                    TextPrinter(5, 46, "*Control systems are active under emergency power.*", 3000);
+                else
+                    TextPrinter(5, 46, "*The control server appear to be offline.*", 3000);
+            }
+            else if (SeenValue == 5)
+            {
+                TextPrinter(5, 46, "*You notice this server is used for backups and data storage.*", 3000);
+            }
+            else if (SeenValue == 6)
+            {
+                TextPrinter(5, 46, "*You open the door*", 2000);
+                PlayerX = 55;
+                PlayerY = 3;
+                area = 3;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
+            }
+            else if (SeenValue == 7)
+            {
+                TextPrinter(5, 46, "*VOLVO i need a GOLD GOLD GOLD*", 2000);
+            }
+            }
+        else if (area == 5)
+        {
+            // Woman room
+            if (SeenValue == 2)
+            {
+                TextPrinter(5, 46, "DLC needed to unlock the woman's bathroom", 4000);
+            }
+            //door to the hallway
+            else if (SeenValue == 3)
+            {
+                TextPrinter(5, 46, "*You walk through the door*", 2000);
+                PlayerX = 35;
+                PlayerY = 3;
+                area = 2;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
+            }
+            // shower
+            else if (SeenValue == 4)
+            {
+                TextPrinter(5, 46, "The floor is still a bit Wet", 2000);
+            }
+            // stalls
+            else if (SeenValue == 5)
+            {
+                TextPrinter(5, 46, "Holy SHIT", 2000);
+            }
+            else if (SeenValue == 6)
+            {
+                TextPrinter(5, 46, "wow almost completly full of piss!", 3000);
+            }
+            else if (SeenValue == 7)
+            {
+                TextPrinter(5, 46, "* 3 sinks, water won't come out *", 3000);
+            }
+        }
+        else if (area == 6)
+        {
+            // closed lockers
+            if (SeenValue == 2)
+            {
+                TextPrinter(5, 46, "*You can't open this locker*", 2000);
+            }
+            // bench
+            else if (SeenValue == 3)
+            {
+                TextPrinter(5, 46, "*Just a ordinary bench*", 2000);
+            }
+            // key holder
+            else if (SeenValue == 4)
+            {
+                if (inventory[8] == 0)
+                {
+                    char input2;
+                    vector<char> code;
+                    vector<char> actChar(4);
+                    actChar[0] = '1';
+                    actChar[1] = '3';
+                    actChar[2] = '5';
+                    actChar[3] = '3';
+                    gotoxy(5, 46);
+                    printf("Press esc to exit, Enter Code: ");
+                    while (true)
+                    {
+                        if (_kbhit()) {
+                            input = _getch();
+
+                            if (input == 27)
+                            {
+                                gotoxy(5, 46);
+                                printf("                                    ");
+                                break;
+                            }
+                            code.push_back(input);
+
+                            gotoxy(36 + code.size(), 46);
+                            printf("*");
+                            
+                            if (code.size() == 4)
+                            {
+                                if (code == actChar)
+                                {
+                                    gotoxy(5, 46);
+                                    printf("                                    ");
+                                    TextPrinter(5, 46, "*it opens and you acquire a key*", 2000);
+                                    inventory[8] = 1;
+                                    break;
+                                }
+                                else
+                                {
+                                    gotoxy(5, 46);
+                                    printf("                                    ");
+                                    TextPrinter(5, 46, "*wrong code buddy*", 1000);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    TextPrinter(5, 46, "*You already took what was inside*", 2000);
+                }
+            }
+            // sink
+            else if (SeenValue == 5)
+            {
+                if(inventory[9] == 0)
+                    TextPrinter(5, 46, "*Water isn't flowing from this sink*", 2000);
+                else
+                    TextPrinter(5, 46, "*Water is flowing from this sink*", 2000);
+            }
+            // bin
+            else if (SeenValue == 6)
+            {
+                TextPrinter(5, 46, "*A bin with a couple of paper towels inside*", 3000);
+            }
+            // door
+            else if (SeenValue == 7)
+            {
+                TextPrinter(5, 46, "*You walk through the door*", 2000);
+                PlayerX = 115;
+                PlayerY = 3;
+                area = 2;
+                ChangeArea(area, starterArea, firstTimeInArea, inventory, zombies);
+            }
+            // bottom body
+            else if (SeenValue == 8)
+            {
+                TextPrinter(5, 46, "*Well he's dead*", 1000);
+            }
+            else if (SeenValue == 10)
+            {
+                TextPrinter(5, 46, "Hes a btch with no loot", 2000);
+            }
+            // philips zombie
+            else if (SeenValue == 11)
+            {
+                if (inventory[11] == 0)
+                {
+                    TextPrinter(5, 46, "*You get the key to philip's locker*", 2000);
+                    inventory[11] = 1;
+                }
+                else
+                    TextPrinter(5, 46, "*He had nothing else of value*", 2000);
+            }
+            // top body
+            else if (SeenValue == 21)
+            {
+                TextPrinter(5, 46, "*Don't wish to be him!*", 2000);
+            }
+            // code locker
+            else if (SeenValue == 22)
+            {
+                if (inventory[10] == 0)
+                {
+                    TextPrinter(5, 46, "*In the locker are a couple of postit's, on them are numbers*", 4000);
+                    inventory[10] = 1;
+                }
+                TextPrinter(5, 46, "*c:5; a:1; d:3; b:3*", 4000);
+            }
+            // phillips secret locker
+            else if (SeenValue == 23)
+            {
+                if(inventory[11] == 1)
+                    TextPrinter(5, 46, "*In this locker is: 1 Bottle of lube, 69 different Dildos and an invitation letter from sir mister Epstein*",5000);
+                else
+                    TextPrinter(5, 46, "*philips locker (key needed)*", 2000);
+            }
+
         }
     }
     else if (input == 32)
