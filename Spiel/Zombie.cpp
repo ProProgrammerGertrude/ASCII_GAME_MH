@@ -3,14 +3,16 @@
 #include <set>
 #include <cfloat>
 #include <stack>
+#include "GameFunctions.h"
 #include "Zombie.h"
 #include "Map_Array.h"
-#include "GameFunctions.h"
+#include "Player.h"
+#include "DeadBody.h"
+#include "MapCreation.h"
 
-
-Zombie::Zombie(int posX, int posY, int lives, int armor, int damage, int startspeed, int speed, int waitfornextzombiemove, int size, int zombieDeathValue, int zombieAreaSpawn)
+Zombie::Zombie(int posX, int posY, int lifes, int armor, int damage, int startspeed, int speed, int waitfornextzombiemove, int size, int zombieDeathValue, int zombieAreaSpawn, int bossOrPawn, int switchMood, int switchCount) :ZombieXMove(false)
 {
-    Zombielives = lives;
+    Zombielife = lifes;
     ZombieArmor = armor;
     Zombiedamage = damage;
     ZombieStartSpeed = startspeed;
@@ -21,8 +23,32 @@ Zombie::Zombie(int posX, int posY, int lives, int armor, int damage, int startsp
     ZombieDeathValue = zombieDeathValue;
     waitForNextZombieMove = waitfornextzombiemove;
     ZombieArea = zombieAreaSpawn;
+    BossOrPawn = bossOrPawn;
+    
+    bodyToRight[0] = "[";
+    bodyToRight[1] = "-";
+    bodyToRight[2] = "\xC2\xB0";
+    bodyToRight[3] = "_";
+    bodyToRight[4] = "\xC2\xB0";
+    bodyToRight[5] = "]";
+    bodyToRight[6] = "-";
+
+    outputRightBody = "[-\xC2\xB0-\xC2\xB0]-";
+
+    bodyToLeft[0] = "-";
+    bodyToLeft[1] = "[";
+    bodyToLeft[2] = "\xC2\xB0";
+    bodyToLeft[3] = "_";
+    bodyToLeft[4] = "\xC2\xB0";
+    bodyToLeft[5] = "-";
+    bodyToLeft[6] = "]";
+
+    outputLeftBody = "-[\xC2\xB0-\xC2\xB0-]";
 
     src = make_pair(ZombieposY, ZombieposX);
+
+    SwitchMood = switchMood;
+    SwitchCount = switchCount;
 }
 // A Utility Function to check whether given cell (row, col)
 // is a valid cell or not.
@@ -36,27 +62,32 @@ bool isValid(int row, int col)
         (col < COLS);
 }
 
+bool ZombieLegalMove(int posX, int posY)
+{
+    return (starterArea[posY][posX] == 0 || starterArea[posY][posX] == 9 || !NotOnDeadBody(posX, posY));
+}
+
 // A Utility Function to check whether the given cell is
 // blocked or not
 bool isUnBlocked(char starterArea[][COLS], int row, int col, Pair src, int directionX, int directionY)
 {
     bool result = true;
     if (row == src.first + directionY && col == src.second + directionX) {
-        result = ((starterArea[row][col] == 0 || starterArea[row][col] == 9) &&
-            (starterArea[row][col + 1] == 0 || starterArea[row][col + 1] == 9) &&
-            (starterArea[row][col + 2] == 0 || starterArea[row][col + 2] == 9) &&
-            (starterArea[row][col + 3] == 0 || starterArea[row][col + 3] == 9) &&
-            (starterArea[row][col + 4] == 0 || starterArea[row][col + 4] == 9) &&
-            (starterArea[row][col + 5] == 0 || starterArea[row][col + 5] == 9) &&
-            (starterArea[row][col + 6] == 0 || starterArea[row][col + 6] == 9));
+        result = (ZombieLegalMove(col, row) &&
+            (ZombieLegalMove(col + 1, row)) &&
+            (ZombieLegalMove(col + 2, row)) &&
+            (ZombieLegalMove(col + 3, row)) &&
+            (ZombieLegalMove(col + 4, row)) &&
+            (ZombieLegalMove(col + 5, row)) &&
+            (ZombieLegalMove(col + 6, row)));
     }
     else {
-        result = ((starterArea[row][col] == 0 || starterArea[row][col] == 9) &&
-            (starterArea[row][col + 1] == 0 || starterArea[row][col + 1] == 9) &&
-            (starterArea[row][col + 2] == 0 || starterArea[row][col + 2] == 9) &&
-            (starterArea[row][col + 3] == 0 || starterArea[row][col + 3] == 9) &&
-            (starterArea[row][col + 4] == 0 || starterArea[row][col + 4] == 9) &&
-            (starterArea[row][col + 5] == 0 || starterArea[row][col + 5] == 9));
+        result = ((ZombieLegalMove(col, row)) &&
+            (ZombieLegalMove(col + 1, row)) &&
+            (ZombieLegalMove(col + 2, row)) &&
+            (ZombieLegalMove(col + 3, row)) &&
+            (ZombieLegalMove(col + 4, row)) &&
+            (ZombieLegalMove(col + 5, row)));
     }
 
     //printf("Checking Cell (%d, %d) -> %s\n", row, col, result ? "Open" : "Blocked");
@@ -67,18 +98,11 @@ bool isUnBlocked(char starterArea[][COLS], int row, int col, Pair src, int direc
 // been reached or not
 bool isDestination(int row, int col, int destY, int destX) {
     int i;
-    //for ( i = 0; i < 5; i++)
-    //{
-
     if (row == destY && col == destX)
     {
-        //printf("Checking: row=%d, col=%d, dest=(%d, %d)\n", row, col, dest.first, dest.second);
-        //printf("Destination reached!\n");
+
         return true;
     }
-    //}
-    //printf("Checking: row=%d, col=%d, i = %d dest=(%d, %d)\n", row, col, i, dest.first, dest.second);
-    //printf("Not a destination.\n");
     return false;
 }
 
@@ -93,7 +117,7 @@ double calculateHValue(int row, int col, Pair dest)
 
 // A Utility Function to trace the path from the source
 // to destination
-void tracePath(cell cellDetails[][COLS], int row, int col, int& ZombieposX, int& ZombieposY, int& Zombiespeed, int& waitForNextZombieMove, bool& ZombieXMove)
+void Zombie::tracePath(cell cellDetails[][COLS], int row, int col, Player& player, Pair dest, Zombie& zombie)
 {
     //int row = destY;
     //int col = destX;
@@ -113,7 +137,6 @@ void tracePath(cell cellDetails[][COLS], int row, int col, int& ZombieposX, int&
         int temp_col = cellDetails[row][col].parent_j;
         row = temp_row;
         col = temp_col;
-        //printf("z");
     }
     Path.push(make_pair(row, col)); // Push the starting position
 
@@ -129,7 +152,6 @@ void tracePath(cell cellDetails[][COLS], int row, int col, int& ZombieposX, int&
             {
                 XChange--;
                 ZombieposX++;
-
             }
             else
             {
@@ -147,32 +169,95 @@ void tracePath(cell cellDetails[][COLS], int row, int col, int& ZombieposX, int&
     else
         ZombieXMove = false;
     // Move the zombie to the new position
+    for (int i = 0; i < ZombieSize; i++)
+    {
+        if (starterArea[ZombieposY + YChange][ZombieposX + XChange + i] == 0 || SteppedOnBodyCheck(ZombieposX + XChange + i, ZombieposY + YChange, deadBodies, player))
+            PrintRemover(ZombieposX + XChange + i, ZombieposY + YChange);
+    }
 
-    gotoxy(ZombieposX + XChange, ZombieposY + YChange);
-    printf("       ");
+    int showEvenInvis = rand() % 10;
     gotoxy(ZombieposX, ZombieposY);
     if (XChange <= 0)
     {
+        if (!zombie.invisible || showEvenInvis == 0)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                if (SteppedOnBodyCheck(ZombieposX + i, ZombieposY, deadBodies, player))
+                {
+                    outputRightBody += "\033[7;31m" + bodyToRight[i] + "\033[0m";
+                }
+                else
+                {
+                    outputRightBody += bodyToRight[i];
+                }
+            }
+        }
         // rechtsschauend
-        printf("\033[0;32m[-\xC2\xB0_\xC2\xB0]-\033[0m");
+        printf("\033[0;32m%s\033[0m", outputRightBody.c_str());
     }
     else
     {
-        printf("\033[0;32m-[\xC2\xB0_\xC2\xB0-]\033[0m");
+        if (!zombie.invisible || showEvenInvis == 0)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                if (SteppedOnBodyCheck(ZombieposX + i, ZombieposY, deadBodies, player))
+                {
+                    outputLeftBody += "\033[7;31m" + bodyToLeft[i] + "\033[0m";
+                }
+                else
+                {
+                    outputLeftBody += bodyToLeft[i];
+                }
+            }
+        }
+
+        printf("\033[0;32m%s\033[0m", outputLeftBody.c_str());
     }
     waitForNextZombieMove = Zombiespeed / (1 + ZombieXMove);
+
+    // If the destination cell is the same as source cell
+    for (int c = 0; c < ZombieSize; c++)
+    {
+        for (int g = 0; g <= PlayerSize; g++)
+        {
+            if (isDestination(src.first, src.second + c, dest.first, dest.second + g))
+            {
+                player.win = 2;
+                return;
+            }
+        }
+    }
 }
 
 
-void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, int& waitForNextZombieMove, int& win, bool& ZombieXMove, int ZombieDeathValue)
+void Zombie::CloseRangeMovement(Pair src, Pair dest, Player& player, Zombie& zombie)
 {
     int randomNumber;
-
-
     bool hittingWall = false;
+    bool steppedOnBody = false;
 
-    //check if the Zombie hasnt got vision
-    if (VisionCheck(ZombieposX, ZombieposY, PlayerX, PlayerY, starterArea, ZombieDeathValue, 9))
+    outputRightBody.clear();
+    outputLeftBody.clear();
+
+    // print deadbody if the zombie is on it
+    for (int i = 0; i < 7; i++)
+    {
+        if (SteppedOnBodyCheck(ZombieposX + i, ZombieposY, deadBodies, player))
+        {
+            steppedOnBody = true;
+        }
+    }
+
+    if (steppedOnBody)
+    {
+        PrintBodies(deadBodies, player.area);
+    }
+    
+    
+    //check if the Zombie hasnt got vision and if the zombie is seeking the player and not a body
+    if ((VisionCheck(ZombieposX, ZombieposY, PlayerX, PlayerY, ZombieDeathValue, 9) && zombie.target == 0))
     {
         randomNumber = rand() % 4;
 
@@ -180,11 +265,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
         {
             for (int i = 0; i < ZombieSize; i++)
             {
-                if (starterArea[ZombieposY - 1][ZombieposX + i] == 0 || starterArea[ZombieposY - 1][ZombieposX + i] == 9)
-                {
-
-                }
-                else
+                if(!ZombieLegalMove(ZombieposX + i, ZombieposY - 1))
                 {
                     hittingWall = true;
                     break;
@@ -193,20 +274,15 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
             if (!hittingWall)
             {
                 ZombieposY--;
-                gotoxy(ZombieposX, ZombieposY + 1);
-                printf("       ");
-
+                for (int i = 0; i < ZombieSize; i++)
+                    PrintRemover(ZombieposX + i, ZombieposY + 1);
             }
         }
         else if (randomNumber == 1)
         {
             for (int i = 0; i < ZombieSize; i++)
             {
-                if (starterArea[ZombieposY][ZombieposX - 1 + i] == 0 || starterArea[ZombieposY][ZombieposX - 1 + i] == 9)
-                {
-
-                }
-                else
+                if(!ZombieLegalMove(ZombieposX - 1 + i, ZombieposY))
                 {
                     hittingWall = true;
                     break;
@@ -215,19 +291,14 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
             if (!hittingWall)
             {
                 ZombieposX--;
-                gotoxy(ZombieposX + 7, ZombieposY);
-                printf(" ");
+                PrintRemover(ZombieposX + 7, ZombieposY);
             }
         }
         else if (randomNumber == 2)
         {
             for (int i = 0; i < ZombieSize; i++)
             {
-                if (starterArea[ZombieposY + 1][ZombieposX + i] == 0 || starterArea[ZombieposY + 1][ZombieposX + i] == 9)
-                {
-
-                }
-                else
+                if(!ZombieLegalMove(ZombieposX + i, ZombieposY + 1))
                 {
                     hittingWall = true;
                     break;
@@ -236,19 +307,15 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
             if (!hittingWall)
             {
                 ZombieposY++;
-                gotoxy(ZombieposX, ZombieposY - 1);
-                printf("       ");
+                for (int i = 0; i < ZombieSize; i++)
+                    PrintRemover(ZombieposX + i, ZombieposY - 1);
             }
         }
         else
         {
             for (int i = 0; i < ZombieSize; i++)
             {
-                if (starterArea[ZombieposY][ZombieposX + i + 1] == 0 || starterArea[ZombieposY][ZombieposX + i + 1] == 9)
-                {
-
-                }
-                else
+                if(!ZombieLegalMove(ZombieposX + i + 1, ZombieposY))
                 {
                     hittingWall = true;
                     break;
@@ -257,17 +324,57 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
             if (!hittingWall)
             {
                 ZombieposX++;
-                gotoxy(ZombieposX - 1, ZombieposY);
-                printf(" ");
+                PrintRemover(ZombieposX - 1, ZombieposY);
             }
         }
-        gotoxy(ZombieposX, ZombieposY);
-        printf("\033[0;32m[-\xC2\xB0_\xC2\xB0]-\033[0m");
+        
+        int showEvenInvis = rand() % 10;
+        if (randomNumber == 3 || randomNumber == 0)
+        {
+            if (!zombie.invisible || showEvenInvis == 0)
+            {
+                for (int i = 0; i < 7; i++)
+                {
+                    if (SteppedOnBodyCheck(ZombieposX + i, ZombieposY, deadBodies, player))
+                    {
+                        outputRightBody += "\033[7;31m" + bodyToRight[i] + "\033[0m";
+                    }
+                    else
+                    {
+                        outputRightBody += "\033[0;32m" + bodyToRight[i] + "\033[0m";
+                    }
+                }
+            }
+            
+            gotoxy(ZombieposX, ZombieposY);
+            printf("\033[0;32m%s\033[0m", outputRightBody.c_str());
+        }
+        else
+        {
+            if (!zombie.invisible || showEvenInvis == 0)
+            {
+                for (int i = 0; i < 7; i++)
+                {
+                    if (SteppedOnBodyCheck(ZombieposX + i, ZombieposY, deadBodies, player))
+                        outputLeftBody += "\033[7;31m" + bodyToLeft[i] + "\033[0m";
+                    else
+                        outputLeftBody += "\033[0;32m" + bodyToLeft[i] + "\033[0m";
+                }
+            }
+
+            gotoxy(ZombieposX, ZombieposY);
+            printf("\033[0;32m%s\033[0m", outputLeftBody.c_str());
+        }
         Zombiespeed = ZombieStartSpeed * 4;
         waitForNextZombieMove = Zombiespeed;
         return;
     }
 
+
+
+
+    
+    
     Zombiespeed = ZombieStartSpeed;
     // If the source is out of range
     if (!isValid(src.first, src.second)) {
@@ -288,20 +395,6 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
         {
             //printf("Source or the destination is blocked\n");
             return;
-        }
-    }
-
-    // If the destination cell is the same as source cell
-
-    for (int c = 0; c <= ZombieSize; c += (ZombieSize / 2))
-    {
-        for (int g = 0; g <= PlayerSize; g++)
-        {
-            if (isDestination(src.first, src.second + c, dest.first, dest.second + g))
-            {
-                win = 2;
-                return;
-            }
         }
     }
 
@@ -403,7 +496,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i - 1][j + c].parent_i = i;
                         cellDetails[i - 1][j + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }
@@ -456,7 +549,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i + 1][j + c].parent_i = i;
                         cellDetails[i + 1][j + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }
@@ -509,7 +602,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i][j + 1 + c].parent_i = i;
                         cellDetails[i][j + 1 + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }
@@ -563,7 +656,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i][j - 1 + c].parent_i = i;
                         cellDetails[i][j - 1 + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }
@@ -619,7 +712,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i - 1][j + 1 + c].parent_i = i;
                         cellDetails[i - 1][j + 1 + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }
@@ -675,7 +768,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i - 1][j - 1 + c].parent_i = i;
                         cellDetails[i - 1][j - 1 + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }
@@ -733,7 +826,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i + 1][j + 1 + c].parent_i = i;
                         cellDetails[i + 1][j + 1 + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }
@@ -790,7 +883,7 @@ void Zombie::CloseRangeMovement(char starterArea[][COLS], Pair src, Pair dest, i
                         cellDetails[i + 1][j - 1 + c].parent_i = i;
                         cellDetails[i + 1][j - 1 + c].parent_j = j;
                         //printf("The destination cell is found\n");
-                        tracePath(cellDetails, dest.first, dest.second + g, ZombieposX, ZombieposY, Zombiespeed, waitForNextZombieMove, ZombieXMove);
+                        tracePath(cellDetails, dest.first, dest.second + g, player, dest, zombie);
                         foundDest = true;
                         return;
                     }

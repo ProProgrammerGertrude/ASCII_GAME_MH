@@ -142,17 +142,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DeadBodys.cpp" />
+    <ClCompile Include="DeadBody.cpp" />
     <ClCompile Include="HTL_Konsole.cpp" />
+    <ClCompile Include="MapCreation.cpp" />
+    <ClCompile Include="ZombieBoss.cpp" />
+    <ClCompile Include="ZombieBossHolo.cpp" />
+    <ClInclude Include="MapCreation.h" />
     <ClCompile Include="Map_Array.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="Spiel.cpp" />
+    <ClCompile Include="Sword.cpp" />
     <ClCompile Include="Zombie.cpp" />
+    <ClInclude Include="ZombieBoss.h" />
+    <ClInclude Include="ZombieBossHolo.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeadBodys.h" />
+    <ClInclude Include="DeadBody.h" />
     <ClInclude Include="GameFunctions.h" />
     <ClInclude Include="HTL_Konsole.h" />
     <ClInclude Include="Map_Array.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="Sword.h" />
     <ClInclude Include="Zombie.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
